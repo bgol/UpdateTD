@@ -36,11 +36,17 @@ class TradeDB:
     system_by_id: dict[int, System] = {}
     station_by_id: dict[int, Station] = {}
 
-    def __init__(self: Self, logger: logging.Logger, db_filename: str):
+    def __init__(
+        self: Self, logger: logging.Logger, db_filename: str, create_item: bool = True,
+        create_ship: bool = True, create_module: bool = True
+    ):
         self.logger = logger
         self.db_filename = db_filename
         self.conn = None
         self.reorder_item = False
+        self.create_item = create_item
+        self.create_ship = create_ship
+        self.create_module = create_module
         self.connect()
         self.load()
 
@@ -95,7 +101,13 @@ class TradeDB:
         self.logger.debug(f"{time_ms}: {stmt} ({bind})")
         return ret
 
-    def change_db_filename(self: Self, db_filename: str) -> None:
+    def change_settings(
+        self: Self, db_filename: str, create_item: bool = True,
+        create_ship: bool = True, create_module: bool = True
+    ) -> None:
+        self.create_item = create_item
+        self.create_ship = create_ship
+        self.create_module = create_module
         if db_filename != self.db_filename:
             self.logger.info(f"new DB filename: {db_filename = !r}")
             self.connect()
@@ -160,7 +172,7 @@ class TradeDB:
         return added
 
     def get_Category(self: Self, name: str) -> Category:
-        if not (category := self.category_by_name.get(name.upper())):
+        if not (category := self.category_by_name.get(name.upper())) and self.create_item:
             category = Category(self.execute("INSERT INTO Category(name) VALUES(?)", (name,)).lastrowid, name)
             self.category_by_name[category.name.upper()] = category
             self.category_by_id[category.category_id] = category
@@ -196,7 +208,7 @@ class TradeDB:
         return station
 
     def make_Item(self: Self, entry: dict) -> Item:
-        if not (item := self.get_Item(entry["id"])):
+        if not (item := self.get_Item(entry["id"])) and self.create_item:
             item = Item(
                 item_id = entry["id"],
                 name = entry["locName"],
@@ -213,7 +225,7 @@ class TradeDB:
         return item
 
     def make_Upgrade(self: Self, entry: dict) -> Upgrade:
-        if not (upgrade := self.get_Upgrade(entry["id"])):
+        if not (upgrade := self.get_Upgrade(entry["id"])) and self.create_module:
             upgrade = Upgrade(
                 upgrade_id = entry["id"],
                 name = entry["name"],
@@ -227,7 +239,7 @@ class TradeDB:
         return upgrade
 
     def make_Ship(self: Self, entry: dict) -> Ship:
-        if not (ship := self.get_Ship(entry["id"])):
+        if not (ship := self.get_Ship(entry["id"])) and self.create_ship:
             ship = Ship(
                 ship_id = entry["id"],
                 name = entry["name"],
@@ -240,7 +252,7 @@ class TradeDB:
         return ship
 
     def update_item_ui_order(self: Self) -> None:
-        if not self.reorder_item:
+        if not (self.reorder_item and self.create_item):
             return
 
         for category in {self.category_by_id[item.category_id] for item in self.item_by_id.values()}:
@@ -353,8 +365,10 @@ class TradeDB:
             if commodity.get("legality", "") != "":
                 # ignore item if present and not empty
                 continue
+            if not (item := self.make_Item(commodity)):
+                self.logger.warning(f"unknown item {commodity = }")
+                continue
 
-            item = self.make_Item(commodity)
             demand_price = make_number(commodity["sellPrice"])
             demand_units = make_number(commodity["demand"])
             demand_level = make_number(commodity["demandBracket"])
@@ -407,14 +421,18 @@ class TradeDB:
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         ship_list = []
         for entry in data["ships"].get("shipyard_list", {}).values():
-            ship = self.make_Ship(entry)
+            if not (ship := self.make_Ship(entry)):
+                self.logger.warning(f"unknown ship {entry = }")
+                continue
             ship_list.append(astuple(ShipVendor(
                 ship_id = ship.ship_id,
                 station_id = station.station_id,
                 modified = self.timestamp,
             )))
         for entry in data['ships'].get('unavailable_list', []):
-            ship = self.make_Ship(entry)
+            if not (ship := self.make_Ship(entry)):
+                self.logger.warning(f"unknown ship {entry = }")
+                continue
             ship_list.append(astuple(ShipVendor(
                 ship_id = ship.ship_id,
                 station_id = station.station_id,
@@ -436,7 +454,9 @@ class TradeDB:
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         module_list = []
         for entry in data["modules"].values():
-            module = self.make_Upgrade(entry)
+            if not (module := self.make_Upgrade(entry)):
+                self.logger.warning(f"unknown module {entry = }")
+                continue
             module_list.append(astuple(UpgradeVendor(
                 upgrade_id = module.upgrade_id,
                 station_id = station.station_id,

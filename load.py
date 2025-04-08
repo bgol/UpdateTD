@@ -19,11 +19,12 @@ from tradedb import TradeDB
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 1, 0)
+__version_info__ = (0, 2, 0)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
 PREFSNAME_DBFILENAME = "updatetd_dbfilename"
+PREFSNAME_CREATE_ = "updatetd_create_"
 
 class This:
     """Module global variables."""
@@ -31,6 +32,22 @@ class This:
     db_filename: str = None
     prefs_db_filename: tk.StringVar = None
     tradedb: TradeDB = None
+    create_item: bool = True
+    create_ship: bool = True
+    create_module: bool = False
+    prefs_create_item: tk.IntVar = None
+    prefs_create_ship: tk.IntVar = None
+    prefs_create_module: tk.IntVar = None
+
+    def __str__(self) -> str:
+        return ("\n".join(line for line in ("",
+            f"{self.default_db_filename = }",
+            f"{self.db_filename = }",
+            f"{self.tradedb = }",
+            f"{self.create_item = }",
+            f"{self.create_ship = }",
+            f"{self.create_module = }",
+        )))
 
 this = This()
 
@@ -39,8 +56,18 @@ def plugin_start3(plugin_dir: str) -> str:
     logger.info(f"{__version__ = }")
 
     this.db_filename = config.get_str(PREFSNAME_DBFILENAME)
+    this.create_item = config.get_bool(f"{PREFSNAME_CREATE_}item", default=True)
+    this.create_ship = config.get_bool(f"{PREFSNAME_CREATE_}ship", default=True)
+    this.create_module = config.get_bool(f"{PREFSNAME_CREATE_}module", default=False)
     this.prefs_db_filename = tk.StringVar(value = this.db_filename)
-    this.tradedb = TradeDB(logger, this.db_filename)
+    this.prefs_create_item = tk.IntVar(value = this.create_item)
+    this.prefs_create_ship = tk.IntVar(value = this.create_ship)
+    this.prefs_create_module = tk.IntVar(value = this.create_module)
+    this.tradedb = TradeDB(
+        logger, this.db_filename, this.create_item,
+        this.create_ship, this.create_module
+    )
+    logger.debug(f"{this = !s}")
 
     return PLUGIN_NAME
 
@@ -87,12 +114,29 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
         command=lambda: filedialog(frame, "Databasefile", this.prefs_db_filename)
     ).grid(row=2, column=3, padx=PADX, pady=(0, PADY), sticky=tk.E)
 
+    nb.Checkbutton(
+        frame, text='Create unknown Item and Category', variable=this.prefs_create_item
+    ).grid(row=3, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+    nb.Checkbutton(
+        frame, text='Create unknown Ship', variable=this.prefs_create_ship
+    ).grid(row=4, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+    nb.Checkbutton(
+        frame, text='Create unknown Module', variable=this.prefs_create_module
+    ).grid(row=5, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+
     return frame
 
 def prefs_changed(cmdr: str, is_beta: bool) -> None:
-   this.db_filename = this.prefs_db_filename.get()
-   config.set(PREFSNAME_DBFILENAME, this.db_filename)
-   this.tradedb.change_db_filename(this.db_filename)
+    this.db_filename = this.prefs_db_filename.get()
+    this.create_item = bool(this.prefs_create_item.get())
+    this.create_ship = bool(this.prefs_create_ship.get())
+    this.create_module = bool(this.prefs_create_module.get())
+    config.set(PREFSNAME_DBFILENAME, this.db_filename)
+    config.set(f"{PREFSNAME_CREATE_}item", this.create_item)
+    config.set(f"{PREFSNAME_CREATE_}ship", this.create_ship)
+    config.set(f"{PREFSNAME_CREATE_}module", this.create_module)
+    this.tradedb.change_settings(this.db_filename, this.create_item, this.create_ship, this.create_module)
+    logger.debug(f"{this = !s}")
 
 def journal_entry(
     cmdrname: str, is_beta: bool, system: str, station: str, entry: dict, state: dict
