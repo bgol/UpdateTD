@@ -14,6 +14,9 @@ You will need to re-start EDMC for it to notice the new plugin.
 
 * Databasefile: The TradeDangerous database file
   - `~/data/TradeDangerous.db` (default suggestion)
+* Create unknown Item and Category (default: True)
+* Create unknown Ship (default: True)
+* Create unknown Module (default: False)
 
 ## License
 
