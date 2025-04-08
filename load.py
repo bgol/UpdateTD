@@ -19,7 +19,7 @@ from tradedb import TradeDB
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 2, 1)
+__version_info__ = (0, 2, 2)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -153,7 +153,7 @@ def journal_entry(
         this.tradedb.update_system(entry, cmdrname)
 
     if entry["event"] == "NavRoute":
-        for route in entry["Route"]:
+        for route in entry.get("Route", []):
             this.tradedb.update_system({"timestamp": entry["timestamp"], **route}, cmdrname)
 
     if entry["event"] == "Docked":
