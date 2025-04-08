@@ -9,13 +9,15 @@ from datetime import datetime
 from dataclasses import asdict, astuple
 
 from companion import CAPIData
+from edmc_data import companion_category_map, ship_name_map
+
 
 from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
     build_insert_stmt, get_field_names,
 )
 from .const import (
-    PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE, IGNORE_CATEGORY,
+    PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
     STRONGHOLDCARRIER_NAME, STRONGHOLDCARRIER_REGEX, COLONISATIONSHIP_NAME, COLONISATIONSHIP_REGEX
 )
 from .tables import Added, Category, Item, Ship, Upgrade, Station, System
@@ -172,6 +174,8 @@ class TradeDB:
         return added
 
     def get_Category(self: Self, name: str) -> Category:
+        if not (name := companion_category_map.get(name, name)):
+            return None
         if not (category := self.category_by_name.get(name.upper())) and self.create_item:
             category = Category(self.execute("INSERT INTO Category(name) VALUES(?)", (name,)).lastrowid, name)
             self.category_by_name[category.name.upper()] = category
@@ -242,7 +246,7 @@ class TradeDB:
         if not (ship := self.get_Ship(entry["id"])) and self.create_ship:
             ship = Ship(
                 ship_id = entry["id"],
-                name = entry["name"],
+                name = ship_name_map.get(entry["name"].lower(), entry["name"]),
                 cost = make_number(entry["basevalue"]),
             )
             stmt, bind = insert_from_dict("Ship", asdict(ship))
@@ -360,7 +364,8 @@ class TradeDB:
         self.reorder_item = False
         item_list = []
         for commodity in data["commodities"]:
-            if commodity.get("categoryname") in IGNORE_CATEGORY:
+            check_name = commodity.get("categoryname")
+            if not companion_category_map.get(check_name, check_name):
                 continue
             if commodity.get("legality", "") != "":
                 # ignore item if present and not empty

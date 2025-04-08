@@ -40,12 +40,6 @@ PADSIZE_BY_STATION_TYPE = {
     "SPACECONSTRUCTIONDEPOT": "L",
 }
 
-# Categories to ignore. Drones end up here.
-IGNORE_CATEGORY = {
-    None,
-    "NonMarketable",
-}
-
 STRONGHOLDCARRIER_REGEX = re.compile(r"($ShipName_StrongholdCarrier|Hochburg-Carrier|Portanaves bastión|Porte-vaisseaux de forteresse|Transportadora da potência|Носитель-база)", re.IGNORECASE)
 STRONGHOLDCARRIER_NAME = "Stronghold Carrier"
 
