@@ -17,6 +17,8 @@ def set_VERSION(file_name):
 def main():
     file_list = [
         "load.py",
+        "README.md",
+        "LICENSE.md",
         "tradedb/__init__.py",
         "tradedb/const.py",
         "tradedb/misc.py",
