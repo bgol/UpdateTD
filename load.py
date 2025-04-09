@@ -19,7 +19,7 @@ from tradedb import TradeDB
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 2, 2)
+__version_info__ = (0, 2, 3)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -172,6 +172,7 @@ def cmdr_data(data: CAPIData, is_beta: bool) -> None:
         return
 
     if data.source_host == SERVER_LIVE and "lastStarport" in data:
+        logger.info("Update starport data.")
         this.tradedb.update_market(data["lastStarport"])
         this.tradedb.update_shipyard(data["lastStarport"])
         this.tradedb.update_outfitting(data["lastStarport"])

@@ -363,23 +363,23 @@ class TradeDB:
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         self.reorder_item = False
         item_list = []
-        for commodity in data["commodities"]:
-            check_name = commodity.get("categoryname")
+        for entry in data["commodities"]:
+            check_name = entry.get("categoryname")
             if not companion_category_map.get(check_name, check_name):
                 continue
-            if commodity.get("legality", "") != "":
+            if entry.get("legality", "") != "":
                 # ignore item if present and not empty
                 continue
-            if not (item := self.make_Item(commodity)):
-                self.logger.warning(f"unknown item {commodity = }")
+            if not (item := self.make_Item(entry)):
+                self.logger.warning(f"unknown item: {entry['id']} - {entry['name']}")
                 continue
 
-            demand_price = make_number(commodity["sellPrice"])
-            demand_units = make_number(commodity["demand"])
-            demand_level = make_number(commodity["demandBracket"])
-            supply_price = make_number(commodity["buyPrice"])
-            supply_units = make_number(commodity["stock"])
-            supply_level = make_number(commodity["stockBracket"])
+            demand_price = make_number(entry["sellPrice"])
+            demand_units = make_number(entry["demand"])
+            demand_level = make_number(entry["demandBracket"])
+            supply_price = make_number(entry["buyPrice"])
+            supply_units = make_number(entry["stock"])
+            supply_level = make_number(entry["stockBracket"])
 
             if supply_level and demand_level:
                 # there should only be supply or demmand, save it anyway (ed bug)
@@ -427,7 +427,7 @@ class TradeDB:
         ship_list = []
         for entry in data["ships"].get("shipyard_list", {}).values():
             if not (ship := self.make_Ship(entry)):
-                self.logger.warning(f"unknown ship {entry = }")
+                self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
                 continue
             ship_list.append(astuple(ShipVendor(
                 ship_id = ship.ship_id,
@@ -436,7 +436,7 @@ class TradeDB:
             )))
         for entry in data['ships'].get('unavailable_list', []):
             if not (ship := self.make_Ship(entry)):
-                self.logger.warning(f"unknown ship {entry = }")
+                self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
                 continue
             ship_list.append(astuple(ShipVendor(
                 ship_id = ship.ship_id,
@@ -460,7 +460,7 @@ class TradeDB:
         module_list = []
         for entry in data["modules"].values():
             if not (module := self.make_Upgrade(entry)):
-                self.logger.warning(f"unknown module {entry = }")
+                self.logger.warning(f"unknown module: {entry['id']} - {entry['name']}")
                 continue
             module_list.append(astuple(UpgradeVendor(
                 upgrade_id = module.upgrade_id,
