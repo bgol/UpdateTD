@@ -14,7 +14,7 @@ from edmc_data import companion_category_map, ship_name_map
 
 from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
-    build_insert_stmt, get_field_names,
+    build_insert_stmt, get_field_names, shipyard_iterator,
 )
 from .const import (
     PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
@@ -423,16 +423,7 @@ class TradeDB:
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         ship_list = []
-        for entry in data["ships"].get("shipyard_list", {}).values():
-            if not (ship := self.make_Ship(entry)):
-                self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
-                continue
-            ship_list.append(astuple(ShipVendor(
-                ship_id = ship.ship_id,
-                station_id = station.station_id,
-                modified = self.timestamp,
-            )))
-        for entry in data['ships'].get('unavailable_list', []):
+        for entry in shipyard_iterator(data["ships"]):
             if not (ship := self.make_Ship(entry)):
                 self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
                 continue

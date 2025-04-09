@@ -27,6 +27,12 @@ def get_from_StationServices(service_list: Iterable[str], key: str):
         return "?"
     return "Y" if key.upper() in service_list else "N"
 
+def shipyard_iterator(data: dict[str, dict | list]) -> Iterable[dict]:
+    if "shipyard_list" in data:
+        yield from data["shipyard_list"].values()
+    if "unavailable_list" in data:
+        yield from data["unavailable_list"]
+
 def build_insert_stmt(tbl_name: str, columns: Iterable[str], replace: bool=False) -> str:
     return (
         f"{replace and 'REPLACE' or 'INSERT'}"
