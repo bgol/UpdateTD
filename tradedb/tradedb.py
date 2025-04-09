@@ -283,6 +283,10 @@ class TradeDB:
                 upd_columns["modified"] = self.timestamp
                 stmt, bind = update_from_dict(tbl_name, upd_columns, **id_columns)
             self.execute(stmt, bind)
+            if tbl_name == "System":
+                self.system_by_id[new_entry.system_id] = self.get_System(new_entry.system_id)
+            elif tbl_name == "Station":
+                self.station_by_id[new_entry.station_id] = self.get_Station(new_entry.station_id)
 
     def update_system(self: Self, entry: dict, cmdrname: str) -> None:
         self.timestamp = datetime.fromisoformat(entry["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
@@ -297,9 +301,6 @@ class TradeDB:
             modified = old_system.modified if old_system else self.timestamp,
         )
         self.update_entry("System", old_system, new_system, system_id=new_system.system_id)
-        if old_system:
-            del self.system_by_id[old_system.system_id]
-        self.system_by_id[new_system.system_id] = self.get_System(new_system.system_id)
 
     def update_station(self, entry: dict) -> None:
         if not (system := self.get_System(entry["SystemAddress"])):
@@ -349,9 +350,6 @@ class TradeDB:
             type_id = STATION_TYPE_MAP.get(stn_type.upper(), 0),
         )
         self.update_entry("Station", old_station, new_station, station_id=new_station.station_id)
-        if old_station:
-            del self.station_by_id[old_station.station_id]
-        self.station_by_id[new_station.station_id] = self.get_Station(new_station.station_id)
 
     def update_market(self, data: dict) -> None:
         if "commodities" not in data:
