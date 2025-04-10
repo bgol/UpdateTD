@@ -53,7 +53,7 @@ class TradeDB:
         self.load()
 
     @property
-    def is_connected(self: Self):
+    def is_connected(self: Self) -> bool:
         return bool(self.conn)
 
     def get_db(self: Self) -> sqlite3.Connection:
@@ -79,7 +79,7 @@ class TradeDB:
             self.logger.info("Database connection closed.")
         self.conn = None
 
-    def connect(self: Self) -> bool:
+    def connect(self: Self) -> None:
         self.close()
         if not self.db_filename:
             self.logger.info("No databasefile configured.")
@@ -173,7 +173,7 @@ class TradeDB:
             self.logger.info(f"created {added = }")
         return added
 
-    def get_Category(self: Self, name: str) -> Category:
+    def get_Category(self: Self, name: str) -> Category | None:
         if not (name := companion_category_map.get(name, name)):
             return None
         if not (category := self.category_by_name.get(name.upper())) and self.create_item:
@@ -184,16 +184,16 @@ class TradeDB:
             self.reorder_item = True
         return category
 
-    def get_Item(self: Self, item_id: int) -> Item:
+    def get_Item(self: Self, item_id: int) -> Item | None:
         return self.item_by_id.get(item_id)
 
-    def get_Ship(self: Self, ship_id: int) -> Ship:
+    def get_Ship(self: Self, ship_id: int) -> Ship | None:
         return self.ship_by_id.get(ship_id)
 
-    def get_Upgrade(self: Self, upgrade_id: int) -> Upgrade:
+    def get_Upgrade(self: Self, upgrade_id: int) -> Upgrade | None:
         return self.upgrade_by_id.get(upgrade_id)
 
-    def get_System(self: Self, address: int) -> System:
+    def get_System(self: Self, address: int) -> System | None:
         if not (system := self.system_by_id.get(address)):
             columns = ",".join(get_field_names(System))
             if row := self.execute(f"SELECT {columns} FROM System WHERE system_id = ?", (address,)).fetchone():
@@ -202,7 +202,7 @@ class TradeDB:
         self.logger.debug(f"get_System({address = }) -> {system = }")
         return system
 
-    def get_Station(self: Self, market_id: int) -> Station:
+    def get_Station(self: Self, market_id: int) -> Station | None:
         if not (station := self.station_by_id.get(market_id)):
             columns = ",".join(get_field_names(Station))
             if row := self.execute(f"SELECT {columns} FROM Station WHERE station_id = ?", (market_id,)).fetchone():
@@ -211,7 +211,7 @@ class TradeDB:
         self.logger.debug(f"get_Station({market_id = }) -> {station = }")
         return station
 
-    def make_Item(self: Self, entry: dict) -> Item:
+    def make_Item(self: Self, entry: dict) -> Item | None:
         if not (item := self.get_Item(entry["id"])) and self.create_item:
             item = Item(
                 item_id = entry["id"],
@@ -228,7 +228,7 @@ class TradeDB:
             self.reorder_item = True
         return item
 
-    def make_Upgrade(self: Self, entry: dict) -> Upgrade:
+    def make_Upgrade(self: Self, entry: dict) -> Upgrade | None:
         if not (upgrade := self.get_Upgrade(entry["id"])) and self.create_module:
             upgrade = Upgrade(
                 upgrade_id = entry["id"],
@@ -242,7 +242,7 @@ class TradeDB:
             self.logger.info(f"created {upgrade = }")
         return upgrade
 
-    def make_Ship(self: Self, entry: dict) -> Ship:
+    def make_Ship(self: Self, entry: dict) -> Ship | None:
         if not (ship := self.get_Ship(entry["id"])) and self.create_ship:
             ship = Ship(
                 ship_id = entry["id"],
