@@ -20,7 +20,7 @@ from .const import (
     PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
     STRONGHOLDCARRIER_NAME, STRONGHOLDCARRIER_REGEX, COLONISATIONSHIP_NAME, COLONISATIONSHIP_REGEX
 )
-from .tables import Added, Category, Item, Ship, Upgrade, Station, System
+from .tables import Added, Category, Item, Ship, Upgrade, Station, System, RareItem
 from .tables import StationItem, ShipVendor, UpgradeVendor
 
 class TradeDB:
@@ -32,6 +32,7 @@ class TradeDB:
     category_by_name: dict[str, Category] = {}
     category_by_id: dict[int, Category] = {}
     item_by_id: dict[int, Item] = {}
+    rareitem_by_id: dict[int, RareItem] = {}
     ship_by_id: dict[int, Ship] = {}
     upgrade_by_id: dict[int, Upgrade] = {}
 
@@ -122,6 +123,7 @@ class TradeDB:
         self._load_Added()
         self._load_Category()
         self._load_Item()
+        self._load_RareItem()
         self._load_Ship()
         self._load_Upgrade()
 
@@ -149,6 +151,14 @@ class TradeDB:
             item = Item(*row)
             self.item_by_id[item.item_id] = item
         self.logger.debug(f"Item: {self.item_by_id}")
+
+    def _load_RareItem(self: Self) -> None:
+        self.rareitem_by_id.clear()
+        columns = ",".join(get_field_names(RareItem))
+        for row in self.execute(f"SELECT {columns} FROM RareItem"):
+            rareitem = RareItem(*row)
+            self.rareitem_by_id[rareitem.rare_id] = rareitem
+        self.logger.debug(f"RareItem: {self.rareitem_by_id}")
 
     def _load_Ship(self: Self) -> None:
         self.ship_by_id.clear()
@@ -187,6 +197,9 @@ class TradeDB:
     def get_Item(self: Self, item_id: int) -> Item | None:
         return self.item_by_id.get(item_id)
 
+    def get_RareItem(self: Self, rare_id: int) -> RareItem | None:
+        return self.rareitem_by_id.get(rare_id)
+
     def get_Ship(self: Self, ship_id: int) -> Ship | None:
         return self.ship_by_id.get(ship_id)
 
@@ -212,6 +225,8 @@ class TradeDB:
         return station
 
     def make_Item(self: Self, entry: dict) -> Item | None:
+        if self.get_RareItem(entry["id"]) is not None:
+            return None
         if not (item := self.get_Item(entry["id"])) and self.create_item:
             item = Item(
                 item_id = entry["id"],
@@ -367,6 +382,9 @@ class TradeDB:
                 continue
             if entry.get("legality", "") != "":
                 # ignore item if present and not empty
+                continue
+            if self.get_RareItem(entry["id"]) is not None:
+                self.logger.debug(f"ignore rareitem: {entry['id']} - {entry['name']}")
                 continue
             if not (item := self.make_Item(entry)):
                 self.logger.warning(f"unknown item: {entry['id']} - {entry['name']}")
