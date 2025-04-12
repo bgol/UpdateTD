@@ -290,6 +290,7 @@ class TradeDB:
         if old_entry != new_entry:
             if old_entry is None:
                 stmt, bind = insert_from_dict(tbl_name, asdict(new_entry))
+                self.logger.info(f"created {new_entry}")
             else:
                 upd_columns = {}
                 for col_name, old_value in asdict(old_entry).items():
@@ -298,6 +299,7 @@ class TradeDB:
                         upd_columns[col_name] = new_value
                 upd_columns["modified"] = self.timestamp
                 stmt, bind = update_from_dict(tbl_name, upd_columns, **id_columns)
+                self.logger.info(f"updated {id_columns}, {upd_columns}")
             self.execute(stmt, bind)
             if tbl_name == "System":
                 self.system_by_id[new_entry.system_id] = self.get_System(new_entry.system_id)

@@ -167,13 +167,16 @@ def journal_entry(
         return
 
     if entry["event"] in {"FSDJump", "Location", "CarrierJump"}:
+        logger.info("Update system data from Jump / Location.")
         this.tradedb.update_system(entry, cmdrname)
 
     if entry["event"] == "NavRoute":
+        logger.info("Update system data from NavRoute.")
         for route in entry.get("Route", []):
             this.tradedb.update_system({"timestamp": entry["timestamp"], **route}, cmdrname)
 
     if entry["event"] == "Docked":
+        logger.info("Update station data.")
         this.tradedb.update_station(entry)
 
 def cmdr_data(data: CAPIData, is_beta: bool) -> None:
