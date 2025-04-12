@@ -22,6 +22,13 @@ def make_number(
 def get_field_names(data_class: dataclass) -> tuple[str]:
     return tuple(field.name.rstrip("_") for field in fields(data_class))
 
+def convert_dict_to_class(data_class: dataclass, row: dict) -> dataclass:
+    args = (
+        field.type(row[field.name.rstrip("_")]) if row.get(field.name.rstrip("_")) else None
+        for field in fields(data_class)
+    )
+    return data_class(*args)
+
 def get_from_StationServices(service_list: Iterable[str], key: str):
     if service_list is None:
         return "?"
