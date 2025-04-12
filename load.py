@@ -14,12 +14,12 @@ from ttkHyperlinkLabel import HyperlinkLabel
 from config import appname, config
 from companion import CAPIData, SERVER_LIVE
 
-from tradedb import TradeDB
+from tradedb import TradeDB, import_standard_data
 
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 2, 7)
+__version_info__ = (0, 2, 8)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -28,6 +28,7 @@ PREFSNAME_CREATE_ = "updatetd_create_"
 
 class This:
     """Module global variables."""
+    plugin_dir: str = None
     default_db_filename = "~/data/TradeDangerous.db"
     db_filename: str = None
     prefs_db_filename: tk.StringVar = None
@@ -55,6 +56,7 @@ this = This()
 def plugin_start3(plugin_dir: str) -> str:
     logger.info(f"{__version__ = }")
 
+    this.plugin_dir = plugin_dir
     this.db_filename = config.get_str(PREFSNAME_DBFILENAME)
     this.create_item = config.get_bool(f"{PREFSNAME_CREATE_}item", default=True)
     this.create_ship = config.get_bool(f"{PREFSNAME_CREATE_}ship", default=True)
@@ -88,6 +90,14 @@ def filedialog(parent: nb.Frame, title: str, pathvar: tk.StringVar) -> None:
     logger.info(f"selected {filename = !r}")
     if filename:
         pathvar.set(filename)
+
+def import_data_button() -> None:
+    db_filename = this.prefs_db_filename.get()
+    this.tradedb.change_settings(db_filename, True, True, True)
+    import_standard_data(this.tradedb, this.plugin_dir)
+    this.tradedb.change_settings(
+        this.db_filename, this.create_item, this.create_ship, this.create_module
+    )
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
     # EDMC defaults
@@ -123,6 +133,13 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
     nb.Checkbutton(
         frame, text='Create unknown Module', variable=this.prefs_create_module
     ).grid(row=5, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+
+    nb.Button(
+        frame, text="Import", command=import_data_button
+    ).grid(row=6, column=1, padx=2*PADX, pady=(0, PADY), sticky=tk.E)
+    nb.Label(
+        frame, text="Import standard values for Categories, Items, Ships and Upgrades"
+    ).grid(row=6, column=2, padx=PADX, pady=(0, PADY), sticky=tk.W)
 
     return frame
 
