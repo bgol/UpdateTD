@@ -1,6 +1,6 @@
 # TradeDangerous DB-Update plugin for [EDMC](https://github.com/EDCD/EDMarketConnector/wiki)
 
-This plugin will update the database of the [TradeDangerous](https://github.com/eyeonus/Trade-Dangerous) directly while playing the game. No export / import needed anymore.
+This plugin will update the database of [TradeDangerous](https://github.com/eyeonus/Trade-Dangerous) directly while playing the game. No export / import needed anymore.
 
 ## Installation
 
@@ -17,6 +17,7 @@ You will need to re-start EDMC for it to notice the new plugin.
 * Create unknown Item and Category (default: True)
 * Create unknown Ship (default: True)
 * Create unknown Module (default: False)
+* Import button: Import standard values for Categories, Items, Ships and Upgrades
 
 ## License
 
