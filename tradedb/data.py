@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 
 from .misc import insert_from_dict, update_from_dict, convert_dict_to_class
-from .tables import Category, Item, Ship, Upgrade
+from .tables import Category, Item, Ship, Upgrade, RareItem
 
 if TYPE_CHECKING:
     from .tradedb import TradeDB
@@ -63,3 +63,28 @@ def import_standard_data(tdb: "TradeDB", plugin_dir: str) -> None:
 
     tdb.update_item_ui_order()
     tdb.logger.info("import done")
+
+def fill_RareItem_cache(tdb: "TradeDB", plugin_dir: str) -> None:
+    tdb.rareitem_cache.clear()
+    if not tdb.use_rareitem_cache:
+        return
+    table_name = "RareItem"
+    import_file = os.path.join(plugin_dir, "data", f"{table_name}.csv")
+    if not os.path.isfile(import_file):
+        tdb.logger.warning(f"import file {import_file!r} not found")
+        return
+    tdb.logger.info(f"fill cache {import_file!r}")
+    with open(import_file, encoding="UTF-8", newline="") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            if not (category := tdb.get_Category(row.pop("name@Category.category_id"))):
+                continue
+            row["category_id"] = category.category_id
+            rareitem: RareItem = convert_dict_to_class(RareItem, row)
+            if rareitem.rare_id in tdb.rareitem_by_id:
+                continue
+            if rareitem.station_id not in tdb.rareitem_cache:
+                tdb.rareitem_cache[rareitem.station_id] = []
+            tdb.rareitem_cache[rareitem.station_id].append(rareitem)
+        tdb.logger.debug(f"{tdb.rareitem_cache = }")
+    tdb.logger.info("cache filled")

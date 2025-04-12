@@ -7,6 +7,7 @@ Plugin for updating your local TradeDangerous database.
 import logging
 import os
 import tkinter as tk
+from tkinter import ttk
 import tkinter.filedialog
 
 import myNotebook as nb
@@ -14,17 +15,18 @@ from ttkHyperlinkLabel import HyperlinkLabel
 from config import appname, config
 from companion import CAPIData, SERVER_LIVE
 
-from tradedb import TradeDB, import_standard_data
+from tradedb import TradeDB, import_standard_data, fill_RareItem_cache
 
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 2, 8)
+__version_info__ = (0, 3, 0)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
 PREFSNAME_DBFILENAME = "updatetd_dbfilename"
 PREFSNAME_CREATE_ = "updatetd_create_"
+PREFSNAME_USE_RAREITEM_CACHE = "updatetd_use_rareitem_cache"
 
 class This:
     """Module global variables."""
@@ -36,18 +38,22 @@ class This:
     create_item: bool = True
     create_ship: bool = True
     create_module: bool = False
+    use_rareitem_cache: bool = False
     prefs_create_item: tk.IntVar = None
     prefs_create_ship: tk.IntVar = None
     prefs_create_module: tk.IntVar = None
+    prefs_use_rareitem_cache: tk.IntVar = None
 
     def __str__(self) -> str:
         return ("\n".join(line for line in ("",
+            f"{self.plugin_dir = }",
             f"{self.default_db_filename = }",
             f"{self.db_filename = }",
             f"{self.tradedb = }",
             f"{self.create_item = }",
             f"{self.create_ship = }",
             f"{self.create_module = }",
+            f"{self.use_rareitem_cache = }",
         )))
 
 this = This()
@@ -61,14 +67,17 @@ def plugin_start3(plugin_dir: str) -> str:
     this.create_item = config.get_bool(f"{PREFSNAME_CREATE_}item", default=True)
     this.create_ship = config.get_bool(f"{PREFSNAME_CREATE_}ship", default=True)
     this.create_module = config.get_bool(f"{PREFSNAME_CREATE_}module", default=False)
+    this.use_rareitem_cache = config.get_bool(PREFSNAME_USE_RAREITEM_CACHE, default=False)
     this.prefs_db_filename = tk.StringVar(value = this.db_filename)
     this.prefs_create_item = tk.IntVar(value = this.create_item)
     this.prefs_create_ship = tk.IntVar(value = this.create_ship)
     this.prefs_create_module = tk.IntVar(value = this.create_module)
+    this.prefs_use_rareitem_cache = tk.IntVar(value = this.use_rareitem_cache)
     this.tradedb = TradeDB(
         logger, this.db_filename, this.create_item,
-        this.create_ship, this.create_module
+        this.create_ship, this.create_module, this.use_rareitem_cache
     )
+    fill_RareItem_cache(this.tradedb, this.plugin_dir)
     logger.debug(f"{this = !s}")
 
     return PLUGIN_NAME
@@ -93,10 +102,11 @@ def filedialog(parent: nb.Frame, title: str, pathvar: tk.StringVar) -> None:
 
 def import_data_button() -> None:
     db_filename = this.prefs_db_filename.get()
-    this.tradedb.change_settings(db_filename, True, True, True)
+    this.tradedb.change_settings(db_filename, True, True, True, False)
     import_standard_data(this.tradedb, this.plugin_dir)
     this.tradedb.change_settings(
-        this.db_filename, this.create_item, this.create_ship, this.create_module
+        this.db_filename, this.create_item, this.create_ship,
+        this.create_module, this.use_rareitem_cache
     )
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
@@ -124,22 +134,33 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
         command=lambda: filedialog(frame, "Databasefile", this.prefs_db_filename)
     ).grid(row=2, column=3, padx=PADX, pady=(0, PADY), sticky=tk.E)
 
+    ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=3, column=1, columnspan=3, padx=PADX, pady=PADY, sticky=tk.EW)
+
     nb.Checkbutton(
         frame, text='Create unknown Item and Category', variable=this.prefs_create_item
-    ).grid(row=3, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
-    nb.Checkbutton(
-        frame, text='Create unknown Ship', variable=this.prefs_create_ship
     ).grid(row=4, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
     nb.Checkbutton(
-        frame, text='Create unknown Module', variable=this.prefs_create_module
+        frame, text='Create unknown Ship', variable=this.prefs_create_ship
     ).grid(row=5, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+    nb.Checkbutton(
+        frame, text='Create unknown Module', variable=this.prefs_create_module
+    ).grid(row=6, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+
+    ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=7, column=2, padx=PADX, pady=PADY, sticky=tk.EW)
+
+    nb.Checkbutton(
+        frame, text='Use RareItem cache (insert known RareItems of a station when docking)',
+        variable=this.prefs_use_rareitem_cache
+    ).grid(row=8, column=2, columnspan=2, padx=PADX, pady=PADY, sticky=tk.W)
+
+    ttk.Separator(frame, orient=tk.HORIZONTAL).grid(row=9, column=1, columnspan=3, padx=PADX, pady=PADY, sticky=tk.EW)
 
     nb.Button(
         frame, text="Import", command=import_data_button
-    ).grid(row=6, column=1, padx=2*PADX, pady=(0, PADY), sticky=tk.E)
+    ).grid(row=10, column=1, padx=2*PADX, pady=(0, PADY), sticky=tk.E)
     nb.Label(
         frame, text="Import standard values for Categories, Items, Ships and Upgrades"
-    ).grid(row=6, column=2, padx=PADX, pady=(0, PADY), sticky=tk.W)
+    ).grid(row=10, column=2, padx=PADX, pady=(0, PADY), sticky=tk.W)
 
     return frame
 
@@ -148,11 +169,17 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
     this.create_item = bool(this.prefs_create_item.get())
     this.create_ship = bool(this.prefs_create_ship.get())
     this.create_module = bool(this.prefs_create_module.get())
+    this.use_rareitem_cache = bool(this.prefs_use_rareitem_cache.get())
     config.set(PREFSNAME_DBFILENAME, this.db_filename)
     config.set(f"{PREFSNAME_CREATE_}item", this.create_item)
     config.set(f"{PREFSNAME_CREATE_}ship", this.create_ship)
     config.set(f"{PREFSNAME_CREATE_}module", this.create_module)
-    this.tradedb.change_settings(this.db_filename, this.create_item, this.create_ship, this.create_module)
+    config.set(PREFSNAME_USE_RAREITEM_CACHE, this.use_rareitem_cache)
+    this.tradedb.change_settings(
+        this.db_filename, this.create_item, this.create_ship,
+        this.create_module, this.use_rareitem_cache
+    )
+    fill_RareItem_cache(this.tradedb, this.plugin_dir)
     logger.debug(f"{this = !s}")
 
 def journal_entry(

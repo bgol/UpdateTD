@@ -17,6 +17,7 @@ You will need to re-start EDMC for it to notice the new plugin.
 * Create unknown Item and Category (default: True)
 * Create unknown Ship (default: True)
 * Create unknown Module (default: False)
+* Use RareItem cache (insert known RareItems of a station when docking, default: False)
 * Import button: Import standard values for Categories, Items, Ships and Upgrades
 
 ## License

@@ -33,6 +33,7 @@ class TradeDB:
     category_by_id: dict[int, Category] = {}
     item_by_id: dict[int, Item] = {}
     rareitem_by_id: dict[int, RareItem] = {}
+    rareitem_cache: dict[int, list[RareItem]] = {}
     ship_by_id: dict[int, Ship] = {}
     upgrade_by_id: dict[int, Upgrade] = {}
 
@@ -41,7 +42,7 @@ class TradeDB:
 
     def __init__(
         self: Self, logger: logging.Logger, db_filename: str, create_item: bool = True,
-        create_ship: bool = True, create_module: bool = True
+        create_ship: bool = True, create_module: bool = True, use_rareitem_cache: bool = False
     ):
         self.logger = logger
         self.db_filename = db_filename
@@ -50,6 +51,7 @@ class TradeDB:
         self.create_item = create_item
         self.create_ship = create_ship
         self.create_module = create_module
+        self.use_rareitem_cache = use_rareitem_cache
         self.connect()
         self.load()
 
@@ -106,11 +108,13 @@ class TradeDB:
 
     def change_settings(
         self: Self, db_filename: str, create_item: bool = True,
-        create_ship: bool = True, create_module: bool = True
+        create_ship: bool = True, create_module: bool = True,
+        use_rareitem_cache: bool = False
     ) -> None:
         self.create_item = create_item
         self.create_ship = create_ship
         self.create_module = create_module
+        self.use_rareitem_cache = use_rareitem_cache
         if db_filename != self.db_filename:
             self.db_filename = db_filename
             self.logger.info(f"new DB filename: {self.db_filename = !r}")
@@ -155,6 +159,7 @@ class TradeDB:
 
     def _load_RareItem(self: Self) -> None:
         self.rareitem_by_id.clear()
+        self.rareitem_cache.clear()
         columns = ",".join(get_field_names(RareItem))
         for row in self.execute(f"SELECT {columns} FROM RareItem"):
             rareitem = RareItem(*row)
@@ -271,6 +276,18 @@ class TradeDB:
             self.logger.info(f"created {ship = }")
         return ship
 
+    def check_for_rareitems(self: Self, station_id: int) -> None:
+        if not self.use_rareitem_cache:
+            return
+
+        for rareitem in self.rareitem_cache.pop(station_id, []):
+            if rareitem.rare_id in self.rareitem_by_id:
+                continue
+            stmt, bind = insert_from_dict("RareItem", asdict(rareitem))
+            self.execute(stmt, bind)
+            self.rareitem_by_id[rareitem.rare_id] = rareitem
+            self.logger.info(f"created {rareitem = }")
+
     def update_item_ui_order(self: Self) -> None:
         if not (self.reorder_item and self.create_item):
             return
@@ -368,6 +385,7 @@ class TradeDB:
             type_id = STATION_TYPE_MAP.get(stn_type.upper(), 0),
         )
         self.update_entry("Station", old_station, new_station, station_id=new_station.station_id)
+        self.check_for_rareitems(new_station.station_id)
 
     def update_market(self, data: dict) -> None:
         if "commodities" not in data:
@@ -375,6 +393,7 @@ class TradeDB:
             return
         if not (station := self.get_Station(data["id"])):
             return
+        self.check_for_rareitems(station.station_id)
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         self.reorder_item = False
