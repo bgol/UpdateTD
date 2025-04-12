@@ -1,6 +1,6 @@
 """
-   auto generated on 2025-04-07T13:31:40Z
-   database file: TradeDangerous.db
+   auto generated on 2025-04-12T06:53:15Z
+   database file: tools\TradeDangerous.db
 """
 
 from dataclasses import dataclass, field
@@ -160,7 +160,7 @@ class Upgrade:
     """TradeDangerous "Upgrade" table"""
     upgrade_id: int
     name: str = None
-    class_: str = None
+    class_: int = None
     rating: str = None
     ship: str = None
 

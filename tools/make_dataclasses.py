@@ -27,7 +27,7 @@ def print_dataclass(conn, db_basename, table_name, out_file):
              out_file.write("_")
         if not col_row["type"]:
             out_type = "bytes"
-        elif "INT" in col_row["type"].upper():
+        elif any(x in col_row["type"].upper() for x in ("INT", "NUMBER")):
             out_type = "int"
         elif any(x in col_row["type"].upper() for x in ("CHAR", "CLOB", "TEXT")):
             out_type = "str"
