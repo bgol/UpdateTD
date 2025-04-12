@@ -112,7 +112,8 @@ class TradeDB:
         self.create_ship = create_ship
         self.create_module = create_module
         if db_filename != self.db_filename:
-            self.logger.info(f"new DB filename: {db_filename = !r}")
+            self.db_filename = db_filename
+            self.logger.info(f"new DB filename: {self.db_filename = !r}")
             self.connect()
             self.load()
 
