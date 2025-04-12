@@ -278,7 +278,7 @@ class TradeDB:
         for category in {self.category_by_id[item.category_id] for item in self.item_by_id.values()}:
             for i, item in enumerate(sorted(
                 (item for item in self.item_by_id.values() if item.category_id == category.category_id),
-                key = lambda x: x.name
+                key = lambda x: x.name.upper()
             ), start = 1):
                 if item.ui_order == i:
                     continue
