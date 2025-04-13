@@ -20,7 +20,7 @@ from tradedb import TradeDB, import_standard_data, fill_RareItem_cache
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 3, 0)
+__version_info__ = (0, 3, 1)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -194,16 +194,16 @@ def journal_entry(
         return
 
     if entry["event"] in {"FSDJump", "Location", "CarrierJump"}:
-        logger.info("Update system data from Jump / Location.")
+        logger.info("Check system data from Jump / Location.")
         this.tradedb.update_system(entry, cmdrname)
 
     if entry["event"] == "NavRoute":
-        logger.info("Update system data from NavRoute.")
+        logger.info("Check system data from NavRoute.")
         for route in entry.get("Route", []):
             this.tradedb.update_system({"timestamp": entry["timestamp"], **route}, cmdrname)
 
     if entry["event"] == "Docked":
-        logger.info("Update station data.")
+        logger.info("Check station data.")
         this.tradedb.update_station(entry)
 
 def cmdr_data(data: CAPIData, is_beta: bool) -> None:

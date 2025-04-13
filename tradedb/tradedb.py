@@ -304,11 +304,14 @@ class TradeDB:
         self.reorder_item = False
 
     def update_entry(self: Self, tbl_name: str, old_entry: Any, new_entry: Any, **id_columns) -> None:
-        if old_entry != new_entry:
+        if old_entry == new_entry:
+            info_text = "up-to-date"
+        else:
             if old_entry is None:
+                info_text = "created"
                 stmt, bind = insert_from_dict(tbl_name, asdict(new_entry))
-                self.logger.info(f"created {new_entry}")
             else:
+                info_text = "updated"
                 upd_columns = {}
                 for col_name, old_value in asdict(old_entry).items():
                     new_value = getattr(new_entry, col_name)
@@ -316,12 +319,12 @@ class TradeDB:
                         upd_columns[col_name] = new_value
                 upd_columns["modified"] = self.timestamp
                 stmt, bind = update_from_dict(tbl_name, upd_columns, **id_columns)
-                self.logger.info(f"updated {id_columns}, {upd_columns}")
             self.execute(stmt, bind)
             if tbl_name == "System":
                 self.system_by_id[new_entry.system_id] = self.get_System(new_entry.system_id)
             elif tbl_name == "Station":
                 self.station_by_id[new_entry.station_id] = self.get_Station(new_entry.station_id)
+        self.logger.info(f"{info_text} {tbl_name} {new_entry.name!r}")
 
     def update_system(self: Self, entry: dict, cmdrname: str) -> None:
         self.timestamp = datetime.fromisoformat(entry["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
@@ -451,6 +454,8 @@ class TradeDB:
         if item_list:
             stmt = build_insert_stmt("StationItem", get_field_names(StationItem))
             self.execute(stmt, item_list, many=True)
+        list_len = len(item_list)
+        self.logger.info(f"market updated ({list_len} item{'' if list_len == 1 else 's'})")
 
         self.update_item_ui_order()
 
@@ -477,6 +482,8 @@ class TradeDB:
         if ship_list:
             stmt = build_insert_stmt("ShipVendor", get_field_names(ShipVendor))
             self.execute(stmt, ship_list, many=True)
+        list_len = len(ship_list)
+        self.logger.info(f"shipyard updated ({list_len} ship{'' if list_len == 1 else 's'})")
 
     def update_outfitting(self, data: CAPIData) -> None:
         if "modules" not in data:
@@ -501,3 +508,5 @@ class TradeDB:
         if module_list:
             stmt = build_insert_stmt("UpgradeVendor", get_field_names(UpgradeVendor))
             self.execute(stmt, module_list, many=True)
+        list_len = len(module_list)
+        self.logger.info(f"outfitting updated ({list_len} module{'' if list_len == 1 else 's'})")
