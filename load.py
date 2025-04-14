@@ -20,7 +20,7 @@ from tradedb import TradeDB, import_standard_data, fill_RareItem_cache
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 3, 1)
+__version_info__ = (0, 3, 2)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -39,10 +39,10 @@ class This:
     create_ship: bool = True
     create_module: bool = False
     use_rareitem_cache: bool = False
-    prefs_create_item: tk.IntVar = None
-    prefs_create_ship: tk.IntVar = None
-    prefs_create_module: tk.IntVar = None
-    prefs_use_rareitem_cache: tk.IntVar = None
+    prefs_create_item: tk.BooleanVar = None
+    prefs_create_ship: tk.BooleanVar = None
+    prefs_create_module: tk.BooleanVar = None
+    prefs_use_rareitem_cache: tk.BooleanVar = None
 
     def __str__(self) -> str:
         return ("\n".join(line for line in ("",
@@ -69,10 +69,10 @@ def plugin_start3(plugin_dir: str) -> str:
     this.create_module = config.get_bool(f"{PREFSNAME_CREATE_}module", default=False)
     this.use_rareitem_cache = config.get_bool(PREFSNAME_USE_RAREITEM_CACHE, default=False)
     this.prefs_db_filename = tk.StringVar(value = this.db_filename)
-    this.prefs_create_item = tk.IntVar(value = this.create_item)
-    this.prefs_create_ship = tk.IntVar(value = this.create_ship)
-    this.prefs_create_module = tk.IntVar(value = this.create_module)
-    this.prefs_use_rareitem_cache = tk.IntVar(value = this.use_rareitem_cache)
+    this.prefs_create_item = tk.BooleanVar(value = this.create_item)
+    this.prefs_create_ship = tk.BooleanVar(value = this.create_ship)
+    this.prefs_create_module = tk.BooleanVar(value = this.create_module)
+    this.prefs_use_rareitem_cache = tk.BooleanVar(value = this.use_rareitem_cache)
     this.tradedb = TradeDB(
         logger, this.db_filename, this.create_item,
         this.create_ship, this.create_module, this.use_rareitem_cache
@@ -166,10 +166,10 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> tk.Frame:
 
 def prefs_changed(cmdr: str, is_beta: bool) -> None:
     this.db_filename = this.prefs_db_filename.get()
-    this.create_item = bool(this.prefs_create_item.get())
-    this.create_ship = bool(this.prefs_create_ship.get())
-    this.create_module = bool(this.prefs_create_module.get())
-    this.use_rareitem_cache = bool(this.prefs_use_rareitem_cache.get())
+    this.create_item = this.prefs_create_item.get()
+    this.create_ship = this.prefs_create_ship.get()
+    this.create_module = this.prefs_create_module.get()
+    this.use_rareitem_cache = this.prefs_use_rareitem_cache.get()
     config.set(PREFSNAME_DBFILENAME, this.db_filename)
     config.set(f"{PREFSNAME_CREATE_}item", this.create_item)
     config.set(f"{PREFSNAME_CREATE_}ship", this.create_ship)
