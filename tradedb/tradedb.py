@@ -14,7 +14,7 @@ from edmc_data import companion_category_map, ship_name_map
 
 from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
-    build_insert_stmt, get_field_names, shipyard_iterator,
+    build_insert_stmt, get_field_names, shipyard_iterator, convert_entry_to_StationItem,
 )
 from .const import (
     PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
@@ -405,50 +405,14 @@ class TradeDB:
             check_name = entry.get("categoryname")
             if not companion_category_map.get(check_name, check_name):
                 continue
-            if entry.get("legality", "") != "":
-                # ignore item if present and not empty
-                continue
             if self.get_RareItem(entry["id"]) is not None:
                 self.logger.debug(f"ignore rareitem: {entry['id']} - {entry['name']}")
                 continue
             if not (item := self.make_Item(entry)):
                 self.logger.warning(f"unknown item: {entry['id']} - {entry['name']}")
                 continue
-
-            demand_price = make_number(entry["sellPrice"])
-            demand_units = make_number(entry["demand"])
-            demand_level = make_number(entry["demandBracket"])
-            supply_price = make_number(entry["buyPrice"])
-            supply_units = make_number(entry["stock"])
-            supply_level = make_number(entry["stockBracket"])
-
-            if supply_level and demand_level:
-                # there should only be supply or demmand, save it anyway (ed bug)
-                # reset level based on units
-                if supply_units == 0:
-                    supply_level = 0
-                if demand_units == 0:
-                    demand_level = 0
-
-            if supply_level == 0:
-                # If there is no stockBracket ignore supply
-                supply_price = 0
-                supply_units = 0
-            else:
-                # otherwise don't care about demand
-                demand_units = 0
-                demand_level = 0
-
-            if supply_level == 0 and demand_level == 0:
-                # not on the market, just in ship cargo
-                continue
-
-            item_list.append(astuple(StationItem(
-                station.station_id, item.item_id,
-                demand_price, demand_units, demand_level,
-                supply_price, supply_units, supply_level,
-                modified=self.timestamp, from_live=1,
-            )))
+            if stn_item := convert_entry_to_StationItem(station, item, self.timestamp, entry):
+                item_list.append(astuple(stn_item))
 
         self.execute("DELETE FROM StationItem WHERE station_id = ?", (station.station_id,))
         if item_list:

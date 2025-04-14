@@ -1,6 +1,7 @@
 from typing import Any
 from collections.abc import Iterable, Callable
 from dataclasses import dataclass, fields
+from .tables import Station, Item, StationItem
 
 
 def snap_to_grid(val: float) -> float:
@@ -33,6 +34,42 @@ def get_from_StationServices(service_list: Iterable[str], key: str):
     if service_list is None:
         return "?"
     return "Y" if key.upper() in service_list else "N"
+
+def convert_entry_to_StationItem(
+        station: Station, item: Item, timestamp: str, entry: dict[str, Any]
+) -> StationItem | None:
+    demand_price = make_number(entry["sellPrice"])
+    demand_units = make_number(entry["demand"])
+    demand_level = make_number(entry["demandBracket"])
+    supply_price = make_number(entry["buyPrice"])
+    supply_units = make_number(entry["stock"])
+    supply_level = make_number(entry["stockBracket"])
+
+    if supply_level and demand_level:
+        # there should only be supply or demmand, save it anyway (ed bug)
+        # reset level based on units
+        if supply_units == 0:
+            supply_level = 0
+        if demand_units == 0:
+            demand_level = 0
+
+    if supply_level == 0:
+        # If there is no stockBracket ignore supply
+        supply_price = 0
+        supply_units = 0
+    else:
+        # otherwise don't care about demand
+        demand_units = 0
+        demand_level = 0
+
+    if supply_level == 0 and demand_level == 0:
+        # not on the market, just in ship cargo
+        return None
+
+    return StationItem(
+        station.station_id, item.item_id, demand_price, demand_units, demand_level,
+        supply_price, supply_units, supply_level, modified=timestamp, from_live=0
+    )
 
 def shipyard_iterator(data: dict[str, dict | list]) -> Iterable[dict]:
     if "shipyard_list" in data:
