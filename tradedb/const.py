@@ -40,7 +40,7 @@ PADSIZE_BY_STATION_TYPE = {
     "SPACECONSTRUCTIONDEPOT": "L",
 }
 
-STRONGHOLDCARRIER_REGEX = re.compile(r"($ShipName_StrongholdCarrier|Hochburg-Carrier|Portanaves bastión|Porte-vaisseaux de forteresse|Transportadora da potência|Носитель-база)", re.IGNORECASE)
+STRONGHOLDCARRIER_REGEX = re.compile(r"(\$ShipName_StrongholdCarrier|Hochburg-Carrier|Portanaves bastión|Porte-vaisseaux de forteresse|Transportadora da potência|Носитель-база)", re.IGNORECASE)
 STRONGHOLDCARRIER_NAME = "Stronghold Carrier"
 
 COLONISATIONSHIP_REGEX = re.compile(r"\$EXT_PANEL_ColonisationShip", re.IGNORECASE)
