@@ -518,6 +518,8 @@ upgrade_id,name,class,rating,ship
 128666724,Missile Rack,1,B,
 128666725,Missile Rack,2,B,
 128891602,Missile Rack,3,A,
+129034963,Mk II Cargo Rack,7,D,
+129034964,Mk II Cargo Rack,8,D,
 128737271,Module Reinforcement Package,1,D,
 128737270,Module Reinforcement Package,1,E,
 128737273,Module Reinforcement Package,2,D,
@@ -1086,6 +1088,11 @@ upgrade_id,name,class,rating,ship
 128049331,Mirrored Surface Composite,1,I,Orca
 128049332,Reactive Surface Composite,1,I,Orca
 128049329,Reinforced Alloy,1,I,Orca
+129034271,Lightweight Alloy,1,I,Panther Clipper Mk II
+129034273,Military Grade Composite,1,I,Panther Clipper Mk II
+129034274,Mirrored Surface Composite,1,I,Panther Clipper Mk II
+129034275,Reactive Surface Composite,1,I,Panther Clipper Mk II
+129034272,Reinforced Alloy,1,I,Panther Clipper Mk II
 128049340,Lightweight Alloy,1,I,Python
 128049342,Military Grade Composite,1,I,Python
 128049343,Mirrored Surface Composite,1,I,Python
