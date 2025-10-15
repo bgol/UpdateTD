@@ -1,6 +1,6 @@
 """
    auto generated on 2025-04-12T06:53:15Z
-   database file: tools\TradeDangerous.db
+   database file: tools/TradeDangerous.db
 """
 
 from dataclasses import dataclass, field
