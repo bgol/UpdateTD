@@ -515,11 +515,13 @@ upgrade_id,name,class,rating,ship
 128740820,Mining Laser,2,D,
 129001922,Mining Multi Limpet Controller,3,C,
 129001921,Mining Multi Limpet Controller,3,E,
+129036137,Mining Volley Repeater,3,C,
 128666724,Missile Rack,1,B,
 128666725,Missile Rack,2,B,
 128891602,Missile Rack,3,A,
 129034963,Mk II Cargo Rack,7,D,
 129034964,Mk II Cargo Rack,8,D,
+129036138,Mk II Mining Multi-Limpet Controller,5,A,
 128737271,Module Reinforcement Package,1,D,
 128737270,Module Reinforcement Package,1,E,
 128737273,Module Reinforcement Package,2,D,
@@ -1113,6 +1115,11 @@ upgrade_id,name,class,rating,ship
 128785624,Mirrored Surface Composite,1,I,Type-10 Defender
 128785625,Reactive Surface Composite,1,I,Type-10 Defender
 128785622,Reinforced Alloy,1,I,Type-10 Defender
+129036132,Lightweight Alloy,1,I,Type-11 Prospector
+129036134,Military Grade Composite,1,I,Type-11 Prospector
+129036135,Mirrored Surface Composite,1,I,Type-11 Prospector
+129036136,Reactive Surface Composite,1,I,Type-11 Prospector
+129036133,Reinforced Alloy,1,I,Type-11 Prospector
 128049286,Lightweight Alloy,1,I,Type-6 Transporter
 128049288,Military Grade Composite,1,I,Type-6 Transporter
 128049289,Mirrored Surface Composite,1,I,Type-6 Transporter
