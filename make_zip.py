@@ -26,6 +26,7 @@ def main():
         "data/Upgrade.csv",
         "tradedb/__init__.py",
         "tradedb/const.py",
+        "tradedb/data.py",
         "tradedb/misc.py",
         "tradedb/tables.py",
         "tradedb/tradedb.py",
