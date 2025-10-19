@@ -396,6 +396,7 @@ class TradeDB:
             self.logger.info("no market data")
             return
         if not (station := self.get_Station(data["id"])):
+            self.logger.info(f"station not in database, market id: {data['id']}")
             return
         self.check_for_rareitems(station.station_id)
 
@@ -429,6 +430,7 @@ class TradeDB:
             self.logger.info("no shipyard data")
             return
         if not (station := self.get_Station(data["id"])):
+            self.logger.info(f"station not in database, market id: {data['id']}")
             return
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
@@ -455,6 +457,7 @@ class TradeDB:
             self.logger.info("no outfitting data")
             return
         if not (station := self.get_Station(data["id"])):
+            self.logger.info(f"station not in database, market id: {data['id']}")
             return
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
