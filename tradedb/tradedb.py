@@ -15,6 +15,7 @@ from edmc_data import companion_category_map, ship_name_map
 from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
     build_insert_stmt, get_field_names, shipyard_iterator, convert_entry_to_StationItem,
+    list_or_dict_iterator,
 )
 from .const import (
     PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
@@ -458,7 +459,7 @@ class TradeDB:
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         module_list = []
-        for entry in data["modules"].values():
+        for entry in list_or_dict_iterator(data["modules"]):
             if not (module := self.make_Upgrade(entry)):
                 self.logger.warning(f"unknown module: {entry['id']} - {entry['name']}")
                 continue

@@ -71,11 +71,17 @@ def convert_entry_to_StationItem(
         supply_price, supply_units, supply_level, modified=timestamp, from_live=0
     )
 
+def list_or_dict_iterator(data: dict[str, Any] | list[Any]) -> Iterable[Any]:
+    if isinstance(data, dict):
+        yield from data.values()
+    elif isinstance(data, list):
+        yield from data
+
 def shipyard_iterator(data: dict[str, dict | list]) -> Iterable[dict]:
     if "shipyard_list" in data:
-        yield from data["shipyard_list"].values()
+        yield from list_or_dict_iterator(data["shipyard_list"])
     if "unavailable_list" in data:
-        yield from data["unavailable_list"]
+        yield from list_or_dict_iterator(data["unavailable_list"])
 
 def build_insert_stmt(tbl_name: str, columns: Iterable[str], replace: bool=False) -> str:
     return (
