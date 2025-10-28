@@ -65,6 +65,9 @@ def import_standard_data(tdb: "TradeDB", plugin_dir: str) -> None:
     tdb.logger.info("import done")
 
 def fill_RareItem_cache(tdb: "TradeDB", plugin_dir: str) -> None:
+    if not tdb.is_connected:
+        tdb.logger.info("Database not connected.")
+        return
     tdb.rareitem_cache.clear()
     if not tdb.use_rareitem_cache:
         return
