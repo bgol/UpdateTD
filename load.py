@@ -198,16 +198,14 @@ def journal_entry(
         logger.info("Check system data from Jump / Location.")
         this.tradedb.update_system(entry, cmdrname)
         if entry["event"] == "Location" and entry.get("Docked", False):
-            logger.info("Check location station data.")
+            logger.info("Check station data from Location.")
             this.tradedb.update_station(entry)
-
-    if entry["event"] == "NavRoute":
+    elif entry["event"] == "NavRoute":
         logger.info("Check system data from NavRoute.")
         for route in entry.get("Route", []):
             this.tradedb.update_system({"timestamp": entry["timestamp"], **route}, cmdrname)
-
-    if entry["event"] == "Docked":
-        logger.info("Check station data.")
+    elif entry["event"] == "Docked":
+        logger.info("Check station data from Docked.")
         this.tradedb.update_station(entry)
 
 def cmdr_data(data: CAPIData, is_beta: bool) -> None:
