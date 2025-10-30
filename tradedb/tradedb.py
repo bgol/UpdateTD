@@ -37,6 +37,7 @@ class TradeDB:
     rareitem_cache: dict[int, list[RareItem]] = {}
     ship_by_id: dict[int, Ship] = {}
     upgrade_by_id: dict[int, Upgrade] = {}
+    fdev_name_to_id: dict[str, int] = {}
 
     system_by_id: dict[int, System] = {}
     station_by_id: dict[int, Station] = {}

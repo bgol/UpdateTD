@@ -15,12 +15,12 @@ from ttkHyperlinkLabel import HyperlinkLabel
 from config import appname, config
 from companion import CAPIData, SERVER_LIVE
 
-from tradedb import TradeDB, import_standard_data, fill_RareItem_cache
+from tradedb import TradeDB, import_standard_data, fill_RareItem_cache, load_fdev_name_mapping
 
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 3, 10)
+__version_info__ = (0, 3, 11)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -78,6 +78,7 @@ def plugin_start3(plugin_dir: str) -> str:
         this.create_ship, this.create_module, this.use_rareitem_cache
     )
     fill_RareItem_cache(this.tradedb, this.plugin_dir)
+    load_fdev_name_mapping(this.tradedb, this.plugin_dir)
     logger.debug(f"{this = !s}")
 
     return PLUGIN_NAME

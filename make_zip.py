@@ -20,6 +20,7 @@ def main():
         "README.md",
         "LICENSE.md",
         "data/Category.csv",
+        "data/FDevMap.csv",
         "data/Item.csv",
         "data/RareItem.csv",
         "data/Ship.csv",

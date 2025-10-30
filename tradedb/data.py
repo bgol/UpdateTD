@@ -91,3 +91,19 @@ def fill_RareItem_cache(tdb: "TradeDB", plugin_dir: str) -> None:
             tdb.rareitem_cache[rareitem.station_id].append(rareitem)
         tdb.logger.debug(f"{tdb.rareitem_cache = }")
     tdb.logger.info("cache filled")
+
+def load_fdev_name_mapping(tdb: "TradeDB", plugin_dir: str) -> None:
+    tdb.fdev_name_to_id.clear()
+    data_file = os.path.join(plugin_dir, "data", "FDevMap.csv")
+    if not os.path.isfile(data_file):
+        tdb.logger.warning(f"data file {data_file!r} not found")
+        return
+    tdb.logger.info(f"load fdev name to id mapping {data_file!r}")
+    with open(data_file, encoding="UTF-8", newline="") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        tdb.fdev_name_to_id = {
+            row["fdev_name"].upper(): int(row["fdev_id"])
+            for row in csv_reader
+        }
+        tdb.logger.debug(f"{tdb.fdev_name_to_id = }")
+    tdb.logger.info(f"{len(tdb.fdev_name_to_id)} mappings loaded")
