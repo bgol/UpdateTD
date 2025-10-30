@@ -20,7 +20,7 @@ from tradedb import TradeDB, import_standard_data, fill_RareItem_cache, load_fde
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 3, 11)
+__version_info__ = (0, 3, 12)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
@@ -207,6 +207,9 @@ def journal_entry(
     elif entry["event"] == "Docked":
         logger.info("Check station data from Docked.")
         this.tradedb.update_station(entry)
+    elif entry["event"] == "ColonisationConstructionDepot":
+        logger.info("Update construction depot data from Journal.")
+        this.tradedb.update_construction_depot(entry)
 
 def cmdr_data(data: CAPIData, is_beta: bool) -> None:
     """
@@ -221,7 +224,11 @@ def cmdr_data(data: CAPIData, is_beta: bool) -> None:
         return
 
     if data.source_host == SERVER_LIVE and "lastStarport" in data:
-        logger.info("Update starport data.")
-        this.tradedb.update_market(data["lastStarport"])
-        this.tradedb.update_shipyard(data["lastStarport"])
-        this.tradedb.update_outfitting(data["lastStarport"])
+        if "requiredConstructionResources" in data["lastStarport"]:
+            logger.info("Update construction depot data from CAPI.")
+            this.tradedb.update_construction_depot(data["lastStarport"])
+        else:
+            logger.info("Update starport data.")
+            this.tradedb.update_market(data["lastStarport"])
+            this.tradedb.update_shipyard(data["lastStarport"])
+            this.tradedb.update_outfitting(data["lastStarport"])

@@ -1,6 +1,8 @@
 from typing import Any
 from collections.abc import Iterable, Callable
 from dataclasses import dataclass, fields
+
+from .const import REGEX_NORMALIZE_NAME
 from .tables import Station, Item, StationItem
 
 
@@ -82,6 +84,21 @@ def shipyard_iterator(data: dict[str, dict | list]) -> Iterable[dict]:
         yield from list_or_dict_iterator(data["shipyard_list"])
     if "unavailable_list" in data:
         yield from list_or_dict_iterator(data["unavailable_list"])
+
+def construction_depot_iterator(data: dict[str, dict[str, dict] | list[dict]]) -> Iterable[tuple[str, dict]]:
+    if "requiredConstructionResources" in data:
+        yield from data["requiredConstructionResources"]["commodities"].items()
+    if "ResourcesRequired" in data:
+        # convert to the same format as the above
+        for org_entry in data["ResourcesRequired"]:
+            fdev_name = REGEX_NORMALIZE_NAME.match(org_entry["Name"]).group("name")
+            entry = {
+                "required": org_entry["RequiredAmount"],
+                "provided": org_entry["ProvidedAmount"],
+                "complete": org_entry["RequiredAmount"] == org_entry["ProvidedAmount"],
+                "creditsPerUnit": org_entry["Payment"],
+            }
+            yield fdev_name, entry
 
 def build_insert_stmt(tbl_name: str, columns: Iterable[str], replace: bool=False) -> str:
     return (

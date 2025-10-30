@@ -45,3 +45,5 @@ STRONGHOLDCARRIER_NAME = "Stronghold Carrier"
 
 COLONISATIONSHIP_REGEX = re.compile(r"\$EXT_PANEL_ColonisationShip", re.IGNORECASE)
 COLONISATIONSHIP_NAME = "System Colonisation Ship"
+
+REGEX_NORMALIZE_NAME = re.compile(r"^(\$)?(?P<name>.*?)(_name;)?$", re.IGNORECASE)
