@@ -391,6 +391,39 @@ class TradeDB:
         self.update_entry("Station", old_station, new_station, station_id=new_station.station_id)
         self.check_for_rareitems(new_station.station_id)
 
+    def get_id_set(self: Self, tbl_name: str, id_col_name: str, **where: Any) -> set[int]:
+        cols, bind = zip(*[col for col in where.items()])
+        stmt = f"SELECT {id_col_name} FROM {tbl_name} WHERE {'=? AND '.join(cols)}=?"
+        return {ID for (ID,) in self.execute(stmt, bind)}
+
+    def get_id_counts(
+        self: Self, new_id_set: set[int], tbl_name: str, id_col_name: str, **where: Any
+    ) -> tuple[int, int, int]:
+        old_id_set = self.get_id_set(tbl_name, id_col_name, **where)
+        ins_count = len(new_id_set - old_id_set)
+        del_count = len(old_id_set - new_id_set)
+        upd_count = len(new_id_set) - ins_count
+        return ins_count, upd_count, del_count
+
+    def update_station_services(
+            self: Self, services_name: str, station: Station, entry_dict: dict[int, tuple],
+            tbl_class: StationItem | ShipVendor | UpgradeVendor, id_col_name: str,
+    ):
+        tbl_name = tbl_class.__name__
+        ins_count, upd_count, del_count = self.get_id_counts(
+            entry_dict.keys(), tbl_name, id_col_name, station_id=station.station_id
+        )
+        self.execute(f"DELETE FROM {tbl_name} WHERE station_id = ?", (station.station_id,))
+        if entry_dict:
+            stmt = build_insert_stmt(tbl_name, get_field_names(tbl_class))
+            self.execute(stmt, entry_dict.values(), many=True)
+        updated_text = ", ".join(
+            f"{text}: {count}"
+            for text, count in (("ins", ins_count), ("upd", upd_count), ("del", del_count))
+            if count > 0
+        )
+        self.logger.info(f"{services_name} updated ({updated_text or 'no change'})")
+
     def update_market(self, data: dict) -> None:
         if "commodities" not in data:
             self.logger.info("no market data")
@@ -402,7 +435,7 @@ class TradeDB:
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         self.reorder_item = False
-        item_list = []
+        item_dict = {}
         for entry in data["commodities"]:
             check_name = entry.get("categoryname")
             if not companion_category_map.get(check_name, check_name):
@@ -414,15 +447,8 @@ class TradeDB:
                 self.logger.warning(f"unknown item: {entry['id']} - {entry['name']}")
                 continue
             if stn_item := convert_entry_to_StationItem(station, item, self.timestamp, entry):
-                item_list.append(astuple(stn_item))
-
-        self.execute("DELETE FROM StationItem WHERE station_id = ?", (station.station_id,))
-        if item_list:
-            stmt = build_insert_stmt("StationItem", get_field_names(StationItem))
-            self.execute(stmt, item_list, many=True)
-        list_len = len(item_list)
-        self.logger.info(f"market updated ({list_len} item{'' if list_len == 1 else 's'})")
-
+                item_dict[stn_item.item_id] = astuple(stn_item)
+        self.update_station_services("market", station, item_dict, StationItem, "item_id")
         self.update_item_ui_order()
 
     def update_shipyard(self, data: CAPIData) -> None:
@@ -434,23 +460,17 @@ class TradeDB:
             return
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
-        ship_list = []
+        ship_dict = {}
         for entry in shipyard_iterator(data["ships"]):
             if not (ship := self.make_Ship(entry)):
                 self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
                 continue
-            ship_list.append(astuple(ShipVendor(
+            ship_dict[ship.ship_id] = astuple(ShipVendor(
                 ship_id = ship.ship_id,
                 station_id = station.station_id,
                 modified = self.timestamp,
-            )))
-
-        self.execute("DELETE FROM ShipVendor WHERE station_id = ?", (station.station_id,))
-        if ship_list:
-            stmt = build_insert_stmt("ShipVendor", get_field_names(ShipVendor))
-            self.execute(stmt, ship_list, many=True)
-        list_len = len(ship_list)
-        self.logger.info(f"shipyard updated ({list_len} ship{'' if list_len == 1 else 's'})")
+            ))
+        self.update_station_services("shipyard", station, ship_dict, ShipVendor, "ship_id")
 
     def update_outfitting(self, data: CAPIData) -> None:
         if "modules" not in data:
@@ -461,20 +481,14 @@ class TradeDB:
             return
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
-        module_list = []
+        module_dict = {}
         for entry in list_or_dict_iterator(data["modules"]):
             if not (module := self.make_Upgrade(entry)):
                 self.logger.warning(f"unknown module: {entry['id']} - {entry['name']}")
                 continue
-            module_list.append(astuple(UpgradeVendor(
+            module_dict[module.upgrade_id] = astuple(UpgradeVendor(
                 upgrade_id = module.upgrade_id,
                 station_id = station.station_id,
                 modified = self.timestamp,
-            )))
-
-        self.execute("DELETE FROM UpgradeVendor WHERE station_id = ?", (station.station_id,))
-        if module_list:
-            stmt = build_insert_stmt("UpgradeVendor", get_field_names(UpgradeVendor))
-            self.execute(stmt, module_list, many=True)
-        list_len = len(module_list)
-        self.logger.info(f"outfitting updated ({list_len} module{'' if list_len == 1 else 's'})")
+            ))
+        self.update_station_services("outfitting", station, module_dict, UpgradeVendor, "upgrade_id")
