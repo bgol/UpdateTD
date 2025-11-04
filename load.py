@@ -20,7 +20,7 @@ from tradedb import TradeDB, import_standard_data, fill_RareItem_cache, load_fde
 PLUGIN_NAME = os.path.basename(os.path.dirname(__file__))
 logger = logging.getLogger(f"{appname}.{PLUGIN_NAME}")
 
-__version_info__ = (0, 3, 12)
+__version_info__ = (1, 0, 0)
 __version__ = ".".join(map(str, __version_info__))
 
 PLUGIN_URL = "https://github.com/bgol/UpdateTD"
