@@ -393,6 +393,11 @@ class TradeDB:
         self.update_entry("Station", old_station, new_station, station_id=new_station.station_id)
         self.check_for_rareitems(new_station.station_id)
 
+    def delete_station(self, market_id: int) -> bool:
+        _ = self.station_by_id.pop(market_id, None)
+        curs = self.execute(f"DELETE FROM Station WHERE station_id = ?", (market_id,))
+        return (curs.rowcount > 0)
+
     def get_id_set(self: Self, tbl_name: str, id_col_name: str, **where: Any) -> set[int]:
         cols, bind = zip(*[col for col in where.items()])
         stmt = f"SELECT {id_col_name} FROM {tbl_name} WHERE {'=? AND '.join(cols)}=?"
@@ -501,6 +506,11 @@ class TradeDB:
             self.logger.info("no construction depot data")
             return
         market_id = data.get("MarketID", data.get("id"))
+        if data.get("ConstructionComplete", False) or data.get("ConstructionFailed", False):
+            if self.delete_station(market_id):
+                status_text = "completed" if data.get("ConstructionComplete", False) else "failed"
+                self.logger.info(f"construction {status_text} -> delete depot, market id: {market_id}")
+            return
         if not (station := self.get_Station(market_id)):
             self.logger.info(f"depot not in database, market id: {market_id}")
             return
