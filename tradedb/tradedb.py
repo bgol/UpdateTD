@@ -502,19 +502,19 @@ class TradeDB:
             return
         market_id = data.get("MarketID", data.get("id"))
         if not (station := self.get_Station(market_id)):
-            self.logger.info(f"station not in database, market id: {market_id}")
+            self.logger.info(f"depot not in database, market id: {market_id}")
             return
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         item_dict = {}
         new_provided_sum = 0
-        old_provided_sum = self.construction_depot_cache.get(market_id, 0)
+        old_provided_sum = self.construction_depot_cache.get(market_id, -1)
         for fdev_name, entry in construction_depot_iterator(data):
+            new_provided_sum += entry["provided"]
             if entry.get("complete", False):
                 continue
             if not (item := self.get_Item(self.fdev_name_to_id.get(fdev_name.upper(), 0))):
                 continue
-            new_provided_sum += entry["provided"]
             item_dict[item.item_id] = astuple(StationItem(
                 station.station_id, item.item_id, entry["creditsPerUnit"],
                 entry["required"] - entry["provided"], 3, 0, 0, 0, self.timestamp, 0
