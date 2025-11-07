@@ -56,17 +56,20 @@ def convert_entry_to_StationItem(
             demand_level = 0
 
     if supply_level == 0:
+        if demand_level == 0:
+            # not on the market, just in ship cargo
+            return None
         # If there is no stockBracket ignore supply
         supply_price = 0
         supply_units = 0
-    else:
-        # otherwise don't care about demand
+    elif demand_price == 0:
+        # no price means you can not sell it
         demand_units = 0
         demand_level = 0
-
-    if supply_level == 0 and demand_level == 0:
-        # not on the market, just in ship cargo
-        return None
+    else:
+        # you can still sell it without demand
+        demand_units = -1
+        demand_level = -1
 
     return StationItem(
         station.station_id, item.item_id, demand_price, demand_units, demand_level,
