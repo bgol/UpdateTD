@@ -254,6 +254,11 @@ upgrade_id,name,class,rating,ship
 129030483,Frame Shift Drive (SCO),7,C,
 129030598,Frame Shift Drive (SCO),7,D,
 129030597,Frame Shift Drive (SCO),7,E,
+129036580,Frame Shift Drive (SCO),8,A,
+129036579,Frame Shift Drive (SCO),8,B,
+129036578,Frame Shift Drive (SCO),8,C,
+129036577,Frame Shift Drive (SCO),8,D,
+129036576,Frame Shift Drive (SCO),8,E,
 128666720,Frame Shift Drive Interdictor,1,A,
 128666716,Frame Shift Drive Interdictor,1,B,
 128666712,Frame Shift Drive Interdictor,1,C,
@@ -521,7 +526,9 @@ upgrade_id,name,class,rating,ship
 128891602,Missile Rack,3,A,
 129034963,Mk II Cargo Rack,7,D,
 129034964,Mk II Cargo Rack,8,D,
+129039228,Mk II Gravity Optimised Thrusters,7,A,
 129036138,Mk II Mining Multi-Limpet Controller,5,A,
+129038968,Mk II Supercharge Optimised Frame Shift Drive (SCO),8,A,
 128737271,Module Reinforcement Package,1,D,
 128737270,Module Reinforcement Package,1,E,
 128737273,Module Reinforcement Package,2,D,
@@ -970,6 +977,12 @@ upgrade_id,name,class,rating,ship
 128049349,Mirrored Surface Composite,1,I,Beluga Liner
 128049350,Reactive Surface Composite,1,I,Beluga Liner
 128049347,Reinforced Alloy,1,I,Beluga Liner
+129036581,Lightweight Alloy,1,C,Caspian Explorer
+129036571,Mk II Ablative Lightweight Alloys,1,C,Caspian Explorer
+129036573,Mk II Ablative Military Grade Composite,1,A,Caspian Explorer
+129036574,Mk II Ablative Mirrored Surface Composite,1,A,Caspian Explorer
+129036575,Mk II Ablative Reactive Surface Composite,1,A,Caspian Explorer
+129036572,Mk II Ablative Reinforced Alloys,1,B,Caspian Explorer
 128049280,Lightweight Alloy,1,I,Cobra Mk III
 128049282,Military Grade Composite,1,I,Cobra Mk III
 128049283,Mirrored Surface Composite,1,I,Cobra Mk III
