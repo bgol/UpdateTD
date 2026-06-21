@@ -7,6 +7,7 @@ from dataclasses import asdict
 
 from .misc import insert_from_dict, update_from_dict, convert_dict_to_class
 from .tables import Category, Item, Ship, Upgrade, RareItem
+from .tables_new import CategoryNew, ItemNew, ShipNew
 
 if TYPE_CHECKING:
     from .tradedb import TradeDB
@@ -32,12 +33,21 @@ def update_import_entry(
     return False
 
 def import_standard_data(tdb: "TradeDB", plugin_dir: str) -> None:
-    for table_name, table_class, table_cache, id_column in (
-        ("Category", Category, tdb.category_by_id, "category_id"),
-        ("Item", Item, tdb.item_by_id, "item_id"),
-        ("Ship", Ship, tdb.ship_by_id, "ship_id"),
-        ("Upgrade", Upgrade, tdb.upgrade_by_id, "upgrade_id"),
-    ):
+    if tdb.is_new_schema is True:
+        import_list = [
+            ("Category", CategoryNew, tdb.category_by_id, "category_id"),
+            ("Item", ItemNew, tdb.item_by_id, "item_id"),
+            ("Ship", ShipNew, tdb.ship_by_id, "ship_id"),
+        ]
+    else:
+        import_list = [
+            ("Category", Category, tdb.category_by_id, "category_id"),
+            ("Item", Item, tdb.item_by_id, "item_id"),
+            ("Ship", Ship, tdb.ship_by_id, "ship_id"),
+            ("Upgrade", Upgrade, tdb.upgrade_by_id, "upgrade_id"),
+        ]
+
+    for table_name, table_class, table_cache, id_column in import_list:
         import_file = os.path.join(plugin_dir, "data", f"{table_name}.csv")
         if not os.path.isfile(import_file):
             tdb.logger.warning(f"import file {import_file!r} not found")
