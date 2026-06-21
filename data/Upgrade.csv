@@ -524,11 +524,22 @@ upgrade_id,name,class,rating,ship
 128666724,Missile Rack,1,B,
 128666725,Missile Rack,2,B,
 128891602,Missile Rack,3,A,
+129041074,Mk II Agile Boost Thrusters,5,A,
 129034963,Mk II Cargo Rack,7,D,
 129034964,Mk II Cargo Rack,8,D,
 129039228,Mk II Gravity Optimised Thrusters,7,A,
 129036138,Mk II Mining Multi-Limpet Controller,5,A,
+129040538,Mk II Plasma Shock Accelerator,3,B,
 129038968,Mk II Supercharge Optimised Frame Shift Drive (SCO),8,A,
+129043772,MkII Business Class Passenger Cabin,3,C,
+129043774,MkII Business Class Passenger Cabin,4,C,
+129043776,MkII Business Class Passenger Cabin,5,C,
+129043778,MkII Business Class Passenger Cabin,5,C,
+129043770,MkII Economy Class Passenger Cabin,2,D,
+129043771,MkII Economy Class Passenger Cabin,3,D,
+129043773,MkII Economy Class Passenger Cabin,4,D,
+129043775,MkII Economy Class Passenger Cabin,5,D,
+129043777,MkII Economy Class Passenger Cabin,5,D,
 128737271,Module Reinforcement Package,1,D,
 128737270,Module Reinforcement Package,1,E,
 128737273,Module Reinforcement Package,2,D,
@@ -1078,6 +1089,11 @@ upgrade_id,name,class,rating,ship
 128672274,Mirrored Surface Composite,1,I,Keelback
 128672275,Reactive Surface Composite,1,I,Keelback
 128672272,Reinforced Alloy,1,I,Keelback
+129039243,Lightweight Alloy,1,C,Kestrel Mk II
+129039245,Military Grade Composite,1,A,Kestrel Mk II
+129039246,Mirrored Surface Composite,1,A,Kestrel Mk II
+129039247,Reactive Surface Composite,1,A,Kestrel Mk II
+129039244,Reinforced Alloy,1,B,Kestrel Mk II
 128816569,Lightweight Alloy,1,I,Krait Mk II
 128816571,Military Grade Composite,1,I,Krait Mk II
 128816572,Mirrored Surface Composite,1,I,Krait Mk II
@@ -1088,6 +1104,11 @@ upgrade_id,name,class,rating,ship
 128839286,Mirrored Surface Composite,1,I,Krait Phantom
 128839287,Reactive Surface Composite,1,I,Krait Phantom
 128839284,Reinforced Alloy,1,I,Krait Phantom
+129041444,Lightweight Alloy,1,C,Lynx Highliner
+129041446,Military Grade Composite,1,A,Lynx Highliner
+129041447,Mirrored Surface Composite,1,A,Lynx Highliner
+129041448,Reactive Surface Composite,1,A,Lynx Highliner
+129041445,Reinforced Alloy,1,B,Lynx Highliner
 128915981,Lightweight Alloy,1,I,Mamba
 128915983,Military Grade Composite,1,I,Mamba
 128915984,Mirrored Surface Composite,1,I,Mamba
