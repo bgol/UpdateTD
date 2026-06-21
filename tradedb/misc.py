@@ -40,6 +40,18 @@ def column_exists(conn: sqlite3.Connection, tbl_name: str, col_name: str) -> boo
         ).fetchone()[0]
     )
 
+def database_is_new_schema(conn: sqlite3.Connection) -> bool:
+    if all(table_exists(conn, tbl_name) for tbl_name in ("Added", "RareItem", "Upgrade")):
+        return False
+    return all(
+        column_exists(conn, tbl_name, col_name)
+        for tbl_name, col_name in (
+            ("Item", "rare_station_id"),
+            ("Station", "lookup_name"),
+            ("System", "lookup_name"),
+        )
+    )
+
 def get_field_names(data_class: dataclass) -> tuple[str]:
     return tuple(field.name.rstrip("_") for field in fields(data_class))
 

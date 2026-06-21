@@ -15,7 +15,7 @@ from edmc_data import companion_category_map, ship_name_map
 from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
     build_insert_stmt, get_field_names, shipyard_iterator, convert_entry_to_StationItem,
-    list_or_dict_iterator, construction_depot_iterator,
+    list_or_dict_iterator, construction_depot_iterator, database_is_new_schema,
 )
 from .const import (
     PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
@@ -55,6 +55,7 @@ class TradeDB:
         self.create_ship = create_ship
         self.create_module = create_module
         self.use_rareitem_cache = use_rareitem_cache
+        self.is_new_schema = None
         self.connect()
         self.load()
 
@@ -77,6 +78,8 @@ class TradeDB:
         conn.create_function("upper", 1, str.upper)
         conn.create_function("lower", 1, str.lower)
 
+        self.is_new_schema = database_is_new_schema(conn)
+
         return conn
 
     def close(self: Self) -> None:
@@ -84,6 +87,7 @@ class TradeDB:
             self.conn.close()
             self.logger.info("Database connection closed.")
         self.conn = None
+        self.is_new_schema = None
 
     def connect(self: Self) -> None:
         self.close()
