@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields
 
 from .const import REGEX_NORMALIZE_NAME
 from .tables import Station, Item, StationItem
+from .tables_new import StationNew, ItemNew, StationItemNew
 
 
 def snap_to_grid(val: float) -> float:
@@ -68,8 +69,8 @@ def get_from_StationServices(service_list: Iterable[str], key: str):
     return "Y" if key.upper() in service_list else "N"
 
 def convert_entry_to_StationItem(
-        station: Station, item: Item, timestamp: str, entry: dict[str, Any]
-) -> StationItem | None:
+        station: Station | StationNew, item: Item | ItemNew, timestamp: str, entry: dict[str, Any]
+) -> StationItem | StationItemNew | None:
     demand_price = make_number(entry["sellPrice"])
     demand_units = make_number(entry["demand"])
     demand_level = make_number(entry["demandBracket"])
@@ -101,6 +102,11 @@ def convert_entry_to_StationItem(
         demand_units = -1
         demand_level = -1
 
+    if isinstance(station, StationNew):
+        return StationItemNew(
+            station.station_id, item.item_id, demand_price, demand_units, demand_level,
+            supply_price, supply_units, supply_level, modified=timestamp, from_live=0
+        )
     return StationItem(
         station.station_id, item.item_id, demand_price, demand_units, demand_level,
         supply_price, supply_units, supply_level, modified=timestamp, from_live=0
