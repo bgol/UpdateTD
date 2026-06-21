@@ -1,3 +1,5 @@
+import sqlite3
+
 from typing import Any
 from collections.abc import Iterable, Callable
 from dataclasses import dataclass, fields
@@ -21,6 +23,22 @@ def make_number(
     except (ValueError, TypeError):
         ret = default
     return ret
+
+def table_exists(conn: sqlite3.Connection, tbl_name: str) -> bool:
+    return bool(
+        conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = ? AND name = ?",
+            ("table", tbl_name)
+        ).fetchone()[0]
+    )
+
+def column_exists(conn: sqlite3.Connection, tbl_name: str, col_name: str) -> bool:
+    return bool(
+        conn.execute(
+            "SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?",
+            (tbl_name, col_name)
+        ).fetchone()[0]
+    )
 
 def get_field_names(data_class: dataclass) -> tuple[str]:
     return tuple(field.name.rstrip("_") for field in fields(data_class))
