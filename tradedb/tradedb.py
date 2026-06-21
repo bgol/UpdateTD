@@ -3,7 +3,7 @@ import time
 import sqlite3
 import os.path
 
-from typing import Self, Any
+from typing import Self, Any, TypeAlias
 from collections.abc import Iterable
 from datetime import datetime
 from dataclasses import asdict, astuple
@@ -16,13 +16,24 @@ from .misc import (
     snap_to_grid, update_from_dict, insert_from_dict, get_from_StationServices, make_number,
     build_insert_stmt, get_field_names, shipyard_iterator, convert_entry_to_StationItem,
     list_or_dict_iterator, construction_depot_iterator, database_is_new_schema,
+    normalize_str
 )
 from .const import (
-    PLANETARY_STATION_TYPES, STATION_TYPE_MAP, PADSIZE_BY_STATION_TYPE,
+    PLANETARY_STATION_TYPES, STATION_TYPE_MAP, STATION_TYPE_MAP_NEW, PADSIZE_BY_STATION_TYPE,
     STRONGHOLDCARRIER_NAME, STRONGHOLDCARRIER_REGEX, COLONISATIONSHIP_NAME, COLONISATIONSHIP_REGEX
 )
 from .tables import Added, Category, Item, Ship, Upgrade, Station, System, RareItem
 from .tables import StationItem, ShipVendor, UpgradeVendor
+from .tables_new import CategoryNew, ItemNew, ShipNew, StationNew, SystemNew
+from .tables_new import StationItemNew, ShipVendorNew
+
+CategoryUse: TypeAlias = Category | CategoryNew
+ItemUse: TypeAlias = Item | ItemNew
+ShipUse: TypeAlias = Ship | ShipNew
+ShipVendorUse: TypeAlias = ShipVendor | ShipVendorNew
+SystemUse: TypeAlias = System | SystemNew
+StationUse: TypeAlias = Station | StationNew
+StationItemUse: TypeAlias = StationItem | StationItemNew
 
 class TradeDB:
     """Database class for interaction."""
@@ -30,18 +41,18 @@ class TradeDB:
     timestamp: str = None
 
     added_by_name: dict[str, Added] = {}
-    category_by_name: dict[str, Category] = {}
-    category_by_id: dict[int, Category] = {}
-    item_by_id: dict[int, Item] = {}
-    rareitem_by_id: dict[int, RareItem] = {}
+    category_by_name: dict[str, CategoryUse] = {}
+    category_by_id: dict[int, CategoryUse] = {}
+    item_by_id: dict[int, ItemUse] = {}
+    rareitem_by_id: dict[int, RareItem | ItemNew] = {}
     rareitem_cache: dict[int, list[RareItem]] = {}
-    ship_by_id: dict[int, Ship] = {}
+    ship_by_id: dict[int, ShipUse] = {}
     upgrade_by_id: dict[int, Upgrade] = {}
     fdev_name_to_id: dict[str, int] = {}
     construction_depot_cache: dict[int, int] = {}
 
-    system_by_id: dict[int, System] = {}
-    station_by_id: dict[int, Station] = {}
+    system_by_id: dict[int, SystemUse] = {}
+    station_by_id: dict[int, StationUse] = {}
 
     def __init__(
         self: Self, logger: logging.Logger, db_filename: str, create_item: bool = True,
@@ -78,7 +89,25 @@ class TradeDB:
         conn.create_function("upper", 1, str.upper)
         conn.create_function("lower", 1, str.lower)
 
+        global CategoryUse, ItemUse, ShipUse, ShipVendorUse, SystemUse, StationUse, StationItemUse
         self.is_new_schema = database_is_new_schema(conn)
+        if self.is_new_schema:
+            CategoryUse = CategoryNew
+            ItemUse = ItemNew
+            ShipUse = ShipNew
+            ShipVendorUse = ShipVendorNew
+            SystemUse = SystemNew
+            StationUse = StationNew
+            StationItemUse = StationItemNew
+        else:
+            CategoryUse = Category
+            ItemUse = Item
+            ShipUse = Ship
+            ShipVendorUse = ShipVendor
+            SystemUse = System
+            StationUse = Station
+            StationItemUse = StationItem
+
         self.logger.info(f"Use {'new' if self.is_new_schema else 'old'} schema for database.")
 
         return conn
@@ -142,6 +171,8 @@ class TradeDB:
 
     def _load_Added(self: Self) -> None:
         self.added_by_name.clear()
+        if self.is_new_schema:
+            return
         columns = ",".join(get_field_names(Added))
         for row in self.execute(f"SELECT {columns} FROM Added"):
             added = Added(*row)
@@ -150,40 +181,47 @@ class TradeDB:
 
     def _load_Category(self: Self) -> None:
         self.category_by_name.clear()
-        columns = ",".join(get_field_names(Category))
+        columns = ",".join(get_field_names(CategoryUse))
         for row in self.execute(f"SELECT {columns} FROM Category"):
-            category = Category(*row)
+            category = CategoryUse(*row)
             self.category_by_name[category.name.upper()] = category
             self.category_by_id[category.category_id] = category
         self.logger.debug(f"Category: {self.category_by_name}")
 
     def _load_Item(self: Self) -> None:
         self.item_by_id.clear()
-        columns = ",".join(get_field_names(Item))
+        columns = ",".join(get_field_names(ItemUse))
         for row in self.execute(f"SELECT {columns} FROM Item"):
-            item = Item(*row)
+            item = ItemUse(*row)
             self.item_by_id[item.item_id] = item
         self.logger.debug(f"Item: {self.item_by_id}")
 
     def _load_RareItem(self: Self) -> None:
         self.rareitem_by_id.clear()
         self.rareitem_cache.clear()
-        columns = ",".join(get_field_names(RareItem))
-        for row in self.execute(f"SELECT {columns} FROM RareItem"):
-            rareitem = RareItem(*row)
-            self.rareitem_by_id[rareitem.rare_id] = rareitem
+        if self.is_new_schema:
+            for key, val in self.item_by_id.items():
+                if val.rare_station_id is not None:
+                    self.rareitem_by_id[key] = val
+        else:
+            columns = ",".join(get_field_names(RareItem))
+            for row in self.execute(f"SELECT {columns} FROM RareItem"):
+                rareitem = RareItem(*row)
+                self.rareitem_by_id[rareitem.rare_id] = rareitem
         self.logger.debug(f"RareItem: {self.rareitem_by_id}")
 
     def _load_Ship(self: Self) -> None:
         self.ship_by_id.clear()
-        columns = ",".join(get_field_names(Ship))
+        columns = ",".join(get_field_names(ShipUse))
         for row in self.execute(f"SELECT {columns} FROM Ship"):
-            ship = Ship(*row)
+            ship = ShipUse(*row)
             self.ship_by_id[ship.ship_id] = ship
         self.logger.debug(f"Ship: {self.ship_by_id}")
 
     def _load_Upgrade(self: Self) -> None:
         self.upgrade_by_id.clear()
+        if self.is_new_schema:
+            return
         columns = ",".join(get_field_names(Upgrade))
         for row in self.execute(f"SELECT {columns} FROM Upgrade"):
             upgrade = Upgrade(*row)
@@ -197,52 +235,52 @@ class TradeDB:
             self.logger.info(f"created {added = }")
         return added
 
-    def get_Category(self: Self, name: str) -> Category | None:
+    def get_Category(self: Self, name: str) -> CategoryUse | None:
         if not (name := companion_category_map.get(name, name)):
             return None
         if not (category := self.category_by_name.get(name.upper())) and self.create_item:
-            category = Category(self.execute("INSERT INTO Category(name) VALUES(?)", (name,)).lastrowid, name)
+            category = CategoryUse(self.execute("INSERT INTO Category(name) VALUES(?)", (name,)).lastrowid, name)
             self.category_by_name[category.name.upper()] = category
             self.category_by_id[category.category_id] = category
             self.logger.info(f"created {category = }")
             self.reorder_item = True
         return category
 
-    def get_Item(self: Self, item_id: int) -> Item | None:
+    def get_Item(self: Self, item_id: int) -> ItemUse | None:
         return self.item_by_id.get(item_id)
 
-    def get_RareItem(self: Self, rare_id: int) -> RareItem | None:
+    def get_RareItem(self: Self, rare_id: int) -> RareItem | ItemNew | None:
         return self.rareitem_by_id.get(rare_id)
 
-    def get_Ship(self: Self, ship_id: int) -> Ship | None:
+    def get_Ship(self: Self, ship_id: int) -> ShipUse | None:
         return self.ship_by_id.get(ship_id)
 
     def get_Upgrade(self: Self, upgrade_id: int) -> Upgrade | None:
         return self.upgrade_by_id.get(upgrade_id)
 
-    def get_System(self: Self, address: int) -> System | None:
+    def get_System(self: Self, address: int) -> SystemUse | None:
         if not (system := self.system_by_id.get(address)):
-            columns = ",".join(get_field_names(System))
+            columns = ",".join(get_field_names(SystemUse))
             if row := self.execute(f"SELECT {columns} FROM System WHERE system_id = ?", (address,)).fetchone():
-                system = System(*row)
+                system = SystemUse(*row)
                 self.system_by_id[address] = system
         self.logger.debug(f"get_System({address = }) -> {system = }")
         return system
 
-    def get_Station(self: Self, market_id: int) -> Station | None:
+    def get_Station(self: Self, market_id: int) -> StationUse | None:
         if not (station := self.station_by_id.get(market_id)):
-            columns = ",".join(get_field_names(Station))
+            columns = ",".join(get_field_names(StationUse))
             if row := self.execute(f"SELECT {columns} FROM Station WHERE station_id = ?", (market_id,)).fetchone():
-                station = Station(*row)
+                station = StationUse(*row)
                 self.station_by_id[market_id] = station
         self.logger.debug(f"get_Station({market_id = }) -> {station = }")
         return station
 
-    def make_Item(self: Self, entry: dict) -> Item | None:
+    def make_Item(self: Self, entry: dict) -> ItemUse | None:
         if self.get_RareItem(entry["id"]) is not None:
             return None
         if not (item := self.get_Item(entry["id"])) and self.create_item:
-            item = Item(
+            item = ItemUse(
                 item_id = entry["id"],
                 name = entry["locName"],
                 category_id = self.get_Category(entry["categoryname"]).category_id,
@@ -271,9 +309,9 @@ class TradeDB:
             self.logger.info(f"created {upgrade = }")
         return upgrade
 
-    def make_Ship(self: Self, entry: dict) -> Ship | None:
+    def make_Ship(self: Self, entry: dict) -> ShipUse | None:
         if not (ship := self.get_Ship(entry["id"])) and self.create_ship:
-            ship = Ship(
+            ship = ShipUse(
                 ship_id = entry["id"],
                 name = ship_name_map.get(entry["name"].lower(), entry["name"]),
                 cost = make_number(entry["basevalue"]),
@@ -291,10 +329,26 @@ class TradeDB:
         for rareitem in self.rareitem_cache.pop(station_id, []):
             if rareitem.rare_id in self.rareitem_by_id:
                 continue
-            stmt, bind = insert_from_dict("RareItem", asdict(rareitem))
-            self.execute(stmt, bind)
-            self.rareitem_by_id[rareitem.rare_id] = rareitem
-            self.logger.info(f"created {rareitem = }")
+            if self.is_new_schema:
+                item = ItemNew(
+                    rareitem.rare_id,
+                    rareitem.name,
+                    rareitem.category_id, 0,
+                    rareitem.cost,
+                    rareitem.rare_id,
+                    rareitem.station_id,
+                )
+                stmt, bind = insert_from_dict("Item", asdict(item))
+                self.execute(stmt, bind)
+                self.item_by_id[item.item_id] = item
+                self.rareitem_by_id[item.item_id] = item
+                self.reorder_item = True
+                self.logger.info(f"created {item = }")
+            else:
+                stmt, bind = insert_from_dict("RareItem", asdict(rareitem))
+                self.execute(stmt, bind)
+                self.rareitem_by_id[rareitem.rare_id] = rareitem
+                self.logger.info(f"created {rareitem = }")
 
     def update_item_ui_order(self: Self) -> None:
         if not (self.reorder_item and self.create_item):
@@ -337,15 +391,19 @@ class TradeDB:
     def update_system(self: Self, entry: dict, cmdrname: str) -> None:
         self.timestamp = datetime.fromisoformat(entry["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
         old_system = self.get_System(entry["SystemAddress"])
-        new_system = System(
-            system_id = entry["SystemAddress"],
-            name = entry.get("StarSystem", entry.get("SystemName", entry.get("System"))),
-            pos_x = snap_to_grid(entry["StarPos"][0]),
-            pos_y = snap_to_grid(entry["StarPos"][1]),
-            pos_z = snap_to_grid(entry["StarPos"][2]),
-            added_id = old_system.added_id if old_system else self.get_Added(cmdrname).added_id,
-            modified = old_system.modified if old_system else self.timestamp,
-        )
+        new_system_dict = {
+            "system_id": entry["SystemAddress"],
+            "name": entry.get("StarSystem", entry.get("SystemName", entry.get("System"))),
+            "pos_x": snap_to_grid(entry["StarPos"][0]),
+            "pos_y": snap_to_grid(entry["StarPos"][1]),
+            "pos_z": snap_to_grid(entry["StarPos"][2]),
+            "modified": old_system.modified if old_system else self.timestamp,
+        }
+        if self.is_new_schema:
+            new_system_dict["lookup_name"] = normalize_str(new_system_dict["name"])
+        else:
+            new_system_dict["added_id"] = old_system.added_id if old_system else self.get_Added(cmdrname).added_id,
+        new_system = SystemUse(**new_system_dict)
         self.update_entry("System", old_system, new_system, system_id=new_system.system_id)
 
     def update_station(self, entry: dict) -> None:
@@ -378,25 +436,31 @@ class TradeDB:
             stn_name = STRONGHOLDCARRIER_NAME
 
         old_station = self.get_Station(entry["MarketID"])
-        new_station = Station(
-            station_id = entry["MarketID"],
-            name = stn_name,
-            system_id = system.system_id,
-            ls_from_star = round(entry.get("DistFromStarLS", 0)),
-            blackmarket = get_from_StationServices(service_set, "BlackMarket"),
-            max_pad_size = max_pad_size,
-            market = get_from_StationServices(service_set, "Commodities"),
-            shipyard = get_from_StationServices(service_set, "Shipyard"),
-            modified = old_station.modified if old_station else self.timestamp,
-            outfitting = get_from_StationServices(service_set, "Outfitting"),
-            rearm = get_from_StationServices(service_set, "Rearm"),
-            refuel = get_from_StationServices(service_set, "Refuel"),
-            repair = get_from_StationServices(service_set, "Repair"),
-            planetary = "Y" if stn_type.upper() in PLANETARY_STATION_TYPES else "N",
-            type_id = STATION_TYPE_MAP.get(stn_type.upper(), 0),
-        )
+        new_station_dict = {
+            "station_id": entry["MarketID"],
+            "name": stn_name,
+            "system_id": system.system_id,
+            "ls_from_star": round(entry.get("DistFromStarLS", 0)),
+            "blackmarket": get_from_StationServices(service_set, "BlackMarket"),
+            "max_pad_size": max_pad_size,
+            "market": get_from_StationServices(service_set, "Commodities"),
+            "shipyard": get_from_StationServices(service_set, "Shipyard"),
+            "modified": old_station.modified if old_station else self.timestamp,
+            "outfitting": get_from_StationServices(service_set, "Outfitting"),
+            "rearm": get_from_StationServices(service_set, "Rearm"),
+            "refuel": get_from_StationServices(service_set, "Refuel"),
+            "repair": get_from_StationServices(service_set, "Repair"),
+            "planetary": "Y" if stn_type.upper() in PLANETARY_STATION_TYPES else "N",
+        }
+        if self.is_new_schema:
+            new_station_dict["lookup_name"] = normalize_str(new_station_dict["name"])
+            new_station_dict["type_id"] = STATION_TYPE_MAP_NEW.get(stn_type.upper(), 0)
+        else:
+            new_station_dict["type_id"] = STATION_TYPE_MAP.get(stn_type.upper(), 0)
+        new_station = StationUse(**new_station_dict)
         self.update_entry("Station", old_station, new_station, station_id=new_station.station_id)
         self.check_for_rareitems(new_station.station_id)
+        self.update_item_ui_order()
 
     def delete_station(self, market_id: int) -> bool:
         _ = self.station_by_id.pop(market_id, None)
@@ -418,10 +482,10 @@ class TradeDB:
         return ins_count, upd_count, del_count
 
     def update_station_services(
-            self: Self, services_name: str, station: Station, entry_dict: dict[int, tuple],
-            tbl_class: StationItem | ShipVendor | UpgradeVendor, id_col_name: str,
+            self: Self, services_name: str, station: StationUse, entry_dict: dict[int, tuple],
+            tbl_class: StationItemUse | ShipVendorUse | UpgradeVendor, id_col_name: str,
     ):
-        tbl_name = tbl_class.__name__
+        tbl_name = tbl_class.__name__.removesuffix("New")
         ins_count, upd_count, del_count = self.get_id_counts(
             entry_dict.keys(), tbl_name, id_col_name, station_id=station.station_id
         )
@@ -443,10 +507,10 @@ class TradeDB:
         if not (station := self.get_Station(data["id"])):
             self.logger.info(f"station not in database, market id: {data['id']}")
             return
+        self.reorder_item = False
         self.check_for_rareitems(station.station_id)
 
         self.timestamp = datetime.fromisoformat(data["timestamp"]).strftime("%Y-%m-%d %H:%M:%S")
-        self.reorder_item = False
         item_dict = {}
         for entry in data["commodities"]:
             check_name = entry.get("categoryname")
@@ -460,7 +524,7 @@ class TradeDB:
                 continue
             if stn_item := convert_entry_to_StationItem(station, item, self.timestamp, entry):
                 item_dict[stn_item.item_id] = astuple(stn_item)
-        self.update_station_services("market", station, item_dict, StationItem, "item_id")
+        self.update_station_services("market", station, item_dict, StationItemUse, "item_id")
         self.update_item_ui_order()
 
     def update_shipyard(self, data: CAPIData) -> None:
@@ -477,14 +541,17 @@ class TradeDB:
             if not (ship := self.make_Ship(entry)):
                 self.logger.warning(f"unknown ship: {entry['id']} - {entry['name']}")
                 continue
-            ship_dict[ship.ship_id] = astuple(ShipVendor(
+            ship_dict[ship.ship_id] = astuple(ShipVendorUse(
                 ship_id = ship.ship_id,
                 station_id = station.station_id,
                 modified = self.timestamp,
             ))
-        self.update_station_services("shipyard", station, ship_dict, ShipVendor, "ship_id")
+        self.update_station_services("shipyard", station, ship_dict, ShipVendorUse, "ship_id")
 
     def update_outfitting(self, data: CAPIData) -> None:
+        if self.is_new_schema:
+            self.logger.info("outfitting no longer stored in database")
+            return
         if "modules" not in data:
             self.logger.info("no outfitting data")
             return
@@ -530,10 +597,10 @@ class TradeDB:
                 continue
             if not (item := self.get_Item(self.fdev_name_to_id.get(fdev_name.upper(), 0))):
                 continue
-            item_dict[item.item_id] = astuple(StationItem(
+            item_dict[item.item_id] = astuple(StationItemUse(
                 station.station_id, item.item_id, entry["creditsPerUnit"],
                 entry["required"] - entry["provided"], 3, 0, 0, 0, self.timestamp, 0
             ))
         if new_provided_sum != old_provided_sum:
-            self.update_station_services("depot", station, item_dict, StationItem, "item_id")
+            self.update_station_services("depot", station, item_dict, StationItemUse, "item_id")
             self.construction_depot_cache[market_id] = new_provided_sum
