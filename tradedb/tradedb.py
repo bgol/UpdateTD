@@ -79,6 +79,7 @@ class TradeDB:
         conn.create_function("lower", 1, str.lower)
 
         self.is_new_schema = database_is_new_schema(conn)
+        self.logger.info(f"Use {'new' if self.is_new_schema else 'old'} schema for database.")
 
         return conn
 
