@@ -13,13 +13,13 @@ STANDARD_OUTPUTFILE = "tables.py"
 
 DEFAULT_FACTORIES = {"CURRENT_TIME", "CURRENT_DATE", "CURRENT_TIMESTAMP"}
 
-def print_dataclass(conn, db_basename, table_name, out_file):
+def print_dataclass(conn, db_basename, table_name, out_file, suffix = ""):
     curs = conn.cursor()
 
     need_default = False
     out_file.write("\n")
     out_file.write("@dataclass(frozen=True)\n")
-    out_file.write(f"class {table_name}:\n")
+    out_file.write(f"class {table_name}{suffix}:\n")
     out_file.write(f'    """{db_basename} "{table_name}" table"""\n')
     for col_row in curs.execute(f"PRAGMA table_xinfo('{table_name}')"):
         out_file.write(f"    {col_row['name']}")
@@ -62,6 +62,11 @@ def parse_args():
         "-o", "--output",
         help="name of the output file",
         default=STANDARD_OUTPUTFILE
+    )
+    parser.add_argument(
+        "-s", "--suffix",
+        help="suffix for the tableclass names",
+        default=""
     )
     return parser.parse_args()
 
@@ -121,7 +126,7 @@ def CURRENT_TIMESTAMP():
 
         for row in curs.execute(stmt):
             print(f"generating: {db_basename}.{row['name']}")
-            print_dataclass(conn, db_basename, row["name"], out_file)
+            print_dataclass(conn, db_basename, row["name"], out_file, suffix = args.suffix)
 
     curs.close()
     conn.close()
