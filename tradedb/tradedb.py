@@ -133,6 +133,7 @@ class TradeDB:
     def execute(self: Self, stmt: str, bind: Iterable|None=None, many=False) -> sqlite3.Cursor:
         conn = self.get_db()
         curs = conn.cursor()
+        self.logger.debug(f"{stmt = } ({bind = })")
         time_ms = time.perf_counter()*-1000
         if many:
             ret = curs.executemany(stmt, bind)
@@ -140,7 +141,7 @@ class TradeDB:
             ret = curs.execute(stmt, bind or ())
         conn.commit()
         time_ms += time.perf_counter()*1000
-        self.logger.debug(f"{time_ms}: {stmt} ({bind})")
+        self.logger.debug(f"execute time: {time_ms}")
         return ret
 
     def change_settings(
