@@ -30,6 +30,7 @@ def main():
         "tradedb/data.py",
         "tradedb/misc.py",
         "tradedb/tables.py",
+        "tradedb/tables_new.py",
         "tradedb/tradedb.py",
     ]
     set_VERSION(file_list[0])
