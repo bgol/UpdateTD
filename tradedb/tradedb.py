@@ -403,7 +403,7 @@ class TradeDB:
         if self.is_new_schema:
             new_system_dict["lookup_name"] = normalize_str(new_system_dict["name"])
         else:
-            new_system_dict["added_id"] = old_system.added_id if old_system else self.get_Added(cmdrname).added_id,
+            new_system_dict["added_id"] = old_system.added_id if old_system else self.get_Added(cmdrname).added_id
         new_system = SystemUse(**new_system_dict)
         self.update_entry("System", old_system, new_system, system_id=new_system.system_id)
 
