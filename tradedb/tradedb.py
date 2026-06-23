@@ -170,6 +170,11 @@ class TradeDB:
         self._load_Ship()
         self._load_Upgrade()
 
+        # clear cache data which are not loaded from the database
+        self.construction_depot_cache.clear()
+        self.system_by_id.clear()
+        self.station_by_id.clear()
+
     def _load_Added(self: Self) -> None:
         self.added_by_name.clear()
         if self.is_new_schema:
